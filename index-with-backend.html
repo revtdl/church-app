@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitefield Methodist Church</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .phone-frame {
+            max-width: 375px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 40px;
+            border: 12px solid #000;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .status-bar {
+            background: #3D3B6C;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-bar {
+            background: #3D3B6C;
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .content {
+            height: 600px;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .section-title {
+            color: #3D3B6C;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 16px;
+            margin-bottom: 12px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .card-description {
+            color: #888;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .info-box {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #3D3B6C;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 32px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .bottom-nav {
+            background: #3D3B6C;
+            color: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            border-top: 1px solid #ddd;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        button {
+            background: #3D3B6C;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        button:hover {
+            background: #2a2848;
+        }
+
+        .backend-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .backend-status.connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .backend-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="backend-status" id="backendStatus">Checking...</div>
+
+    <div class="phone-frame">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>🔋</span>
+        </div>
+
+        <!-- App Bar -->
+        <div class="app-bar">
+            <span>☰</span>
+            <span class="app-title">Church Nexus</span>
+            <span>🏠</span>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Events Screen -->
+            <div id="events" class="screen active">
+                <div class="section-title">📅 Upcoming Events</div>
+                <div id="eventsContainer" class="loading">Loading events from backend...</div>
+                <button onclick="refreshEvents()">🔄 Refresh</button>
+            </div>
+
+            <!-- Sermons Screen -->
+            <div id="sermons" class="screen">
+                <div class="section-title">🎤 Sermons</div>
+                <div id="sermonsContainer" class="loading">Loading sermons from backend...</div>
+                <button onclick="refreshSermons()">🔄 Refresh</button>
+            </div>
+
+            <!-- Prayers Screen -->
+            <div id="prayers" class="screen">
+                <div class="section-title">❤️ Prayer Requests</div>
+                <div id="prayersContainer" class="loading">Loading prayers from backend...</div>
+                <button onclick="refreshPrayers()">🔄 Refresh</button>
+            </div>
+
+            <!-- Users Screen -->
+            <div id="users" class="screen">
+                <div class="section-title">👥 Members</div>
+                <div id="usersContainer" class="loading">Loading members from backend...</div>
+                <button onclick="refreshUsers()">🔄 Refresh</button>
+            </div>
+
+            <!-- Settings Screen -->
+            <div id="settings" class="screen">
+                <div class="section-title">⚙️ Backend Configuration</div>
+                <div class="info-box">
+                    <strong>Backend URL:</strong><br>
+                    <input type="text" id="backendUrl" style="width: 100%; padding: 8px; margin-top: 8px; border: 1px solid #ddd; border-radius: 4px;" value="http://localhost:5678">
+                </div>
+                <button onclick="testConnection()">Test Connection</button>
+                <div id="connectionResult" style="margin-top: 12px;"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="showScreen('events')">
+                <div>📅</div>
+                <div>Events</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('sermons')">
+                <div>🎤</div>
+                <div>Sermons</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('prayers')">
+                <div>❤️</div>
+                <div>Prayers</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('users')">
+                <div>👥</div>
+                <div>Members</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('settings')">
+                <div>⚙️</div>
+                <div>Settings</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let BACKEND_URL = 'http://localhost:5678';
+
+        // Check backend connection on load
+        window.addEventListener('load', () => {
+            const savedUrl = localStorage.getItem('backendUrl');
+            if (savedUrl) {
+                BACKEND_URL = savedUrl;
+                document.getElementById('backendUrl').value = savedUrl;
+            }
+            checkBackendStatus();
+            loadAllData();
+        });
+
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                if (response.ok) {
+                    updateBackendStatus(true);
+                    return true;
+                }
+            } catch (error) {
+                updateBackendStatus(false);
+                return false;
+            }
+        }
+
+        function updateBackendStatus(connected) {
+            const status = document.getElementById('backendStatus');
+            if (connected) {
+                status.textContent = '✓ Backend Connected';
+                status.className = 'backend-status connected';
+            } else {
+                status.textContent = '✗ Backend Offline';
+                status.className = 'backend-status disconnected';
+            }
+        }
+
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api${endpoint}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
+            }
+        }
+
+        async function loadAllData() {
+            await refreshEvents();
+            await refreshSermons();
+            await refreshPrayers();
+            await refreshUsers();
+        }
+
+        async function refreshEvents() {
+            const container = document.getElementById('eventsContainer');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+
+            const events = await fetchData('/events');
+            if (!events) {
+                container.innerHTML = '<div class="error">❌ Failed to load events from backend</div>';
+                return;
+            }
+
+            if (events.length === 0) {
+                container.innerHTML = '<div class="info-box">No events scheduled yet</div>';
+                return;
+            }
+
+            container.innerHTML = events.map(event => `
+                <div class="card">
+                    <div class="card-title">📅 ${event.title}</div>
+                    <div class="card-subtitle">${event.location}</div>
+                    <div class="card-description">${event.description || 'Event details'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function refreshSermons() {
+            const container = document.getElementById('sermonsContainer');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+
+            const sermons = await fetchData('/sermons');
+            if (!sermons) {
+                container.innerHTML = '<div class="error">❌ Failed to load sermons from backend</div>';
+                return;
+            }
+
+            if (sermons.length === 0) {
+                container.innerHTML = '<div class="info-box">No sermons available yet</div>';
+                return;
+            }
+
+            container.innerHTML = sermons.map(sermon => `
+                <div class="card">
+                    <div class="card-title">🎤 ${sermon.title}</div>
+                    <div class="card-subtitle">by ${sermon.speaker}</div>
+                    <div class="card-description">${sermon.description || 'Sermon details'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function refreshPrayers() {
+            const container = document.getElementById('prayersContainer');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+
+            const prayers = await fetchData('/prayers');
+            if (!prayers) {
+                container.innerHTML = '<div class="error">❌ Failed to load prayers from backend</div>';
+                return;
+            }
+
+            if (prayers.length === 0) {
+                container.innerHTML = '<div class="info-box">No prayer requests yet</div>';
+                return;
+            }
+
+            container.innerHTML = prayers.map(prayer => `
+                <div class="card">
+                    <div class="card-title">❤️ ${prayer.title}</div>
+                    <div class="card-description">${prayer.description || 'Prayer request'}</div>
+                    <div class="card-subtitle">🙏 ${prayer.prayerCount || 0} prayers</div>
+                </div>
+            `).join('');
+        }
+
+        async function refreshUsers() {
+            const container = document.getElementById('usersContainer');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+
+            const users = await fetchData('/users');
+            if (!users) {
+                container.innerHTML = '<div class="error">❌ Failed to load members from backend</div>';
+                return;
+            }
+
+            if (users.length === 0) {
+                container.innerHTML = '<div class="info-box">No members found</div>';
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div class="card">
+                    <div class="card-title">👤 ${user.name}</div>
+                    <div class="card-subtitle">${user.email}</div>
+                    <div class="card-description">Joined: ${user.joinedDate || 'N/A'}</div>
+                </div>
+            `).join('');
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        async function testConnection() {
+            const url = document.getElementById('backendUrl').value;
+            BACKEND_URL = url;
+            localStorage.setItem('backendUrl', url);
+
+            const result = document.getElementById('connectionResult');
+            result.innerHTML = '<div class="loading">Testing...</div>';
+
+            try {
+                const response = await fetch(`${url}/health`);
+                if (response.ok) {
+                    result.innerHTML = '<div class="success">✓ Backend connection successful!</div>';
+                    updateBackendStatus(true);
+                    setTimeout(() => loadAllData(), 500);
+                } else {
+                    result.innerHTML = '<div class="error">✗ Backend returned error: ' + response.status + '</div>';
+                    updateBackendStatus(false);
+                }
+            } catch (error) {
+                result.innerHTML = '<div class="error">✗ Cannot connect to backend. Make sure it\'s running on ' + url + '</div>';
+                updateBackendStatus(false);
+            }
+        }
+    </script>
+</body>
+</html>

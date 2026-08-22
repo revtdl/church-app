@@ -1,0 +1,25 @@
+{
+  "announcements": [
+    {
+      "id": 1,
+      "title": "Sunday Service Starting Time Changed",
+      "content": "Please note that starting from next Sunday, the English service will begin at 10:00 AM instead of 9:30 AM.",
+      "date": "2026-08-17",
+      "priority": "high"
+    },
+    {
+      "id": 2,
+      "title": "Vacation Bible School Registration",
+      "content": "Registration for our summer Vacation Bible School is now open. Limited seats available. Contact the office for details.",
+      "date": "2026-08-16",
+      "priority": "normal"
+    },
+    {
+      "id": 3,
+      "title": "Building Maintenance Schedule",
+      "content": "The church will be closed on August 25th for facility maintenance. We will reopen on August 26th.",
+      "date": "2026-08-15",
+      "priority": "normal"
+    }
+  ]
+}

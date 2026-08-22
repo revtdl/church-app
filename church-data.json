@@ -1,0 +1,342 @@
+{
+  "church": {
+    "name": "Whitefield Methodist Church",
+    "tagline": "Worshipping God · Serving People · Growing Together",
+    "established": 2012,
+    "denomination": "The Methodist Church in India (Bangalore Regional Conference)",
+    "founderMottos": "Holy Living and Gospel Ministry"
+  },
+  "location": {
+    "address": "690, Sathya Sai Layout, St. Joseph's Convent Compound",
+    "city": "Whitefield, Bengaluru",
+    "postalCode": "560066",
+    "state": "Karnataka",
+    "country": "India",
+    "fullAddress": "690, Sathya Sai Layout, St. Joseph's Convent Compound, Whitefield, Bengaluru – 560066, Karnataka, India"
+  },
+  "contact": {
+    "phone": "+91 9986012000",
+    "email": "contact@whitefieldchurch.org",
+    "instagram": "@whitefieldmethodistchurch",
+    "website": "https://whitefieldmethodistchurch.com"
+  },
+  "leadership": {
+    "seniorPastor": {
+      "name": "Rev. David Livingston",
+      "qualifications": ["B.A", "M.B.A", "B.D"],
+      "role": "Senior Pastor"
+    }
+  },
+  "visionMission": {
+    "vision": "Go therefore and make disciples of all the nations (Matthew 28:19) – Deep-rooted in Christ, growing as a true worshipping family",
+    "mission": "Spiritual healing agent inviting seekers to worship and care for the suffering through prayer and proclaiming God's love"
+  },
+  "serviceTimes": [
+    {
+      "id": 1,
+      "name": "Tamil & Hindi Service",
+      "day": "Sunday",
+      "time": "8:00 AM",
+      "location": "Main Sanctuary"
+    },
+    {
+      "id": 2,
+      "name": "Sunday School",
+      "day": "Sunday",
+      "time": "9:30 AM",
+      "location": "Classroom Block"
+    },
+    {
+      "id": 3,
+      "name": "English Service",
+      "day": "Sunday",
+      "time": "10:30 AM",
+      "location": "Main Sanctuary"
+    },
+    {
+      "id": 4,
+      "name": "Area Fellowship",
+      "day": "Friday - Sunday",
+      "time": "7:00 PM",
+      "location": "Fellowship Hall"
+    },
+    {
+      "id": 5,
+      "name": "Tamil Cottage Prayers",
+      "day": "Wednesday",
+      "time": "7:00 PM",
+      "location": "Various Locations"
+    },
+    {
+      "id": 6,
+      "name": "Singing Practice",
+      "day": "Saturday",
+      "time": "5:00 PM - 7:00 PM",
+      "location": "Music Room"
+    }
+  ],
+  "monthlyPrograms": [
+    {
+      "date": "First Sunday",
+      "program": "Holy Communion",
+      "time": "During service"
+    },
+    {
+      "date": "Second Sunday",
+      "program": "Fasting Prayer",
+      "time": "10:00 AM – 12:30 PM"
+    }
+  ],
+  "currentTheme": {
+    "month": "August 2026",
+    "title": "The Holy Spirit Leads You",
+    "verse": "Romans 8:14 - For those who are led by the Spirit of God are the children of God",
+    "focus": "Sanctification of the Holy Spirit",
+    "keyTopics": [
+      "Truth",
+      "Holiness",
+      "Courage",
+      "Freedom",
+      "Meekness"
+    ]
+  },
+  "upcomingEvents": [
+    {
+      "id": 1,
+      "title": "Independence Day - WSCS Day Out",
+      "date": "2026-08-15",
+      "time": "All Day",
+      "location": "Church Grounds",
+      "description": "Special celebration of Independence Day with church fellowship"
+    },
+    {
+      "id": 2,
+      "title": "Football Tournament",
+      "date": "2026-08-22",
+      "time": "4:00 PM - 6:00 PM",
+      "location": "Sports Ground",
+      "description": "Community sports event for all ages"
+    },
+    {
+      "id": 3,
+      "title": "Family Retreat (English)",
+      "date": "2026-08-30",
+      "time": "9:00 AM",
+      "location": "Retreat Center",
+      "description": "Family-focused spiritual retreat - Theme: The House is built by Wisdom"
+    },
+    {
+      "id": 4,
+      "title": "Dawn Service",
+      "date": "2026-09-01",
+      "time": "6:30 AM",
+      "location": "Online",
+      "description": "Early morning worship service"
+    },
+    {
+      "id": 5,
+      "title": "Dinner Talk",
+      "date": "2026-09-06",
+      "time": "5:00 PM",
+      "location": "Fellowship Hall",
+      "description": "Community dinner and sharing session"
+    },
+    {
+      "id": 6,
+      "title": "Family Retreat (Tamil)",
+      "date": "2026-09-13",
+      "time": "9:00 AM",
+      "location": "Retreat Center",
+      "description": "Tamil language family retreat"
+    },
+    {
+      "id": 7,
+      "title": "Family Retreat (Hindi)",
+      "date": "2026-09-20",
+      "time": "9:00 AM",
+      "location": "Retreat Center",
+      "description": "Hindi language family retreat"
+    }
+  ],
+  "ministries": [
+    {
+      "id": 1,
+      "name": "Christian Education & Nurture",
+      "mission": "Shape believers and equip for God's purposes"
+    },
+    {
+      "id": 2,
+      "name": "Finance & Stewardship",
+      "mission": "Good stewardship of resources for kingdom building"
+    },
+    {
+      "id": 3,
+      "name": "Information Technology",
+      "mission": "Collate and disseminate data for smooth church operations"
+    },
+    {
+      "id": 4,
+      "name": "Membership & Records",
+      "mission": "Welcome visitors and encourage family integration"
+    },
+    {
+      "id": 5,
+      "name": "Mission & Evangelism",
+      "mission": "Local, statewide, national, international outreach"
+    },
+    {
+      "id": 6,
+      "name": "Music & Multimedia",
+      "mission": "Glorify God through voice, music, and media"
+    },
+    {
+      "id": 7,
+      "name": "Prayer",
+      "mission": "Foundation of constant dependence on God's resources"
+    },
+    {
+      "id": 8,
+      "name": "Property",
+      "mission": "Maintain and upgrade facilities for ministry needs"
+    },
+    {
+      "id": 9,
+      "name": "Publication & Literature",
+      "mission": "Enable growth through God's Word"
+    },
+    {
+      "id": 10,
+      "name": "Social Concern",
+      "mission": "Care for needy inside and outside the church"
+    },
+    {
+      "id": 11,
+      "name": "Ushers",
+      "mission": "Coordinate seamless, meaningful worship experiences"
+    }
+  ],
+  "fellowships": [
+    "Youth Fellowship",
+    "Women's Fellowship",
+    "Men's Fellowship",
+    "Sunday School",
+    "Cottage Prayer Meetings",
+    "Area Fellowship",
+    "Weekend Sport Activities",
+    "Praise & Worship Singing Team"
+  ],
+  "communityPrograms": [
+    "Education support for underprivileged children",
+    "Financial aid for poor and needy",
+    "Hospital and home visitation ministry",
+    "Health awareness programs"
+  ],
+  "sermons": [
+    {
+      "id": 1,
+      "title": "The Holy Spirit Leads You",
+      "speaker": "Rev. David Livingston",
+      "date": "2026-08-17",
+      "series": "August Theme Series",
+      "topic": "Truth",
+      "description": "First part of the Holy Spirit Leads series - Understanding God's Truth"
+    },
+    {
+      "id": 2,
+      "title": "Living in Holiness",
+      "speaker": "Rev. David Livingston",
+      "date": "2026-08-24",
+      "series": "August Theme Series",
+      "topic": "Holiness",
+      "description": "Living a holy life through the power of the Holy Spirit"
+    },
+    {
+      "id": 3,
+      "title": "Courage in Faith",
+      "speaker": "Rev. David Livingston",
+      "date": "2026-08-31",
+      "series": "August Theme Series",
+      "topic": "Courage",
+      "description": "Finding courage in God's promises"
+    }
+  ],
+  "testimonials": [
+    {
+      "id": 1,
+      "author": "Sarah Johnson",
+      "title": "Spiritual Transformation",
+      "content": "My life has been transformed through the loving community of Whitefield Methodist Church. The pastors and members have shown me God's love in countless ways.",
+      "date": "2026-07-15"
+    },
+    {
+      "id": 2,
+      "author": "Michael Smith",
+      "title": "Finding Purpose",
+      "content": "Through the ministry programs here, I discovered my purpose in serving others. This church has become my spiritual home.",
+      "date": "2026-07-20"
+    },
+    {
+      "id": 3,
+      "author": "Maria Garcia",
+      "title": "God's Healing Power",
+      "content": "During my difficult times, the prayer ministry and church family's support helped me experience God's healing and restoration.",
+      "date": "2026-07-25"
+    }
+  ],
+  "prayerRequests": [
+    {
+      "id": 1,
+      "title": "Health & Healing",
+      "submitter": "Anonymous",
+      "description": "Prayers for those battling illnesses and health challenges",
+      "status": "Active",
+      "prayerCount": 156
+    },
+    {
+      "id": 2,
+      "title": "Family Restoration",
+      "submitter": "Anonymous",
+      "description": "Prayers for broken families seeking reconciliation",
+      "status": "Active",
+      "prayerCount": 89
+    },
+    {
+      "id": 3,
+      "title": "Job Search & Career",
+      "submitter": "Anonymous",
+      "description": "Prayers for those seeking employment and career guidance",
+      "status": "Active",
+      "prayerCount": 124
+    }
+  ],
+  "giving": {
+    "title": "Support Our Ministry",
+    "categories": [
+      {
+        "name": "General Fund",
+        "description": "Support church operations and ministry programs"
+      },
+      {
+        "name": "Missions & Outreach",
+        "description": "Support local and international missionary work"
+      },
+      {
+        "name": "Building Fund",
+        "description": "Support church facility improvements and expansion"
+      },
+      {
+        "name": "Social Concern",
+        "description": "Support community aid and welfare programs"
+      },
+      {
+        "name": "Youth Ministry",
+        "description": "Support programs for young people"
+      }
+    ]
+  },
+  "metadata": {
+    "lastUpdated": "2026-08-17",
+    "source": "Whitefield Methodist Church Official Website",
+    "version": "1.0"
+  }
+}

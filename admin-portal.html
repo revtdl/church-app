@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Admin Portal</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Church Admin Portal</h1>
+        <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Login</button>
+            <button type="button" class="demo-btn" onclick="demoLogin()">Demo Access</button>
+        </form>
+    </div>
+
+    <div class="admin-container">
+        <div class="sidebar">
+            <h3 style="margin-bottom: 20px;">Menu</h3>
+            <div class="menu-item active" onclick="showSection('dashboard')">Dashboard</div>
+            <div class="menu-item" onclick="showSection('announcements')">Announcements</div>
+            <div class="menu-item" onclick="showSection('events')">Events</div>
+            <div class="menu-item" onclick="showSection('sermons')">Sermons</div>
+            <div class="menu-item" onclick="showSection('prayers')">Prayers</div>
+            <div class="menu-item" onclick="showSection('members')">Members</div>
+            <div class="menu-item" onclick="logout()">Logout</div>
+        </div>
+
+        <div class="content">
+            <div id="dashboard" class="section active">
+                <h2>Dashboard</h2>
+                <p>Welcome! Select a menu item to manage your church content.</p>
+            </div>
+
+            <div id="announcements" class="section">
+                <h2>Announcements (From the Pastor)</h2>
+                <button class="btn" onclick="openAnnouncementForm()">Add Announcement</button>
+                <table>
+                    <thead>
+                        <tr><th>Title</th><th>Content</th></tr>
+                    </thead>
+                    <tbody id="announcementsTable">
+                        <tr><td colspan="2">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="events" class="section">
+                <h2>Events</h2>
+                <button class="btn" onclick="openEventForm()">Add Event</button>
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Date</th><th>Location</th></tr>
+                    </thead>
+                    <tbody id="eventsTable">
+                        <tr><td colspan="3">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="sermons" class="section">
+                <h2>Sermons</h2>
+                <button class="btn" onclick="openSermonForm()">Add Sermon</button>
+                <table>
+                    <thead>
+                        <tr><th>Title</th><th>Speaker</th><th>Date</th></tr>
+                    </thead>
+                    <tbody id="sermonsTable">
+                        <tr><td colspan="3">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="prayers" class="section">
+                <h2>Prayer Requests</h2>
+                <button class="btn" onclick="openPrayerForm()">Add Prayer</button>
+                <table>
+                    <thead>
+                        <tr><th>Title</th><th>Content</th></tr>
+                    </thead>
+                    <tbody id="prayersTable">
+                        <tr><td colspan="2">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="members" class="section">
+                <h2>Members</h2>
+                <button class="btn" onclick="openMemberForm()">Add Member</button>
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Email</th><th>Phone</th><th>Type</th></tr>
+                    </thead>
+                    <tbody id="membersTable">
+                        <tr><td colspan="4">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%;">
+            <h2>Add Event</h2>
+            <input type="text" id="eventName" placeholder="Event Name" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="date" id="eventDate" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="text" id="eventLocation" placeholder="Location" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <button onclick="saveEvent()" style="margin:10px 0;">Save</button>
+            <button onclick="closeEventForm()" style="background:#999;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcementModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%;">
+            <h2>Add Announcement</h2>
+            <input type="text" id="announcementTitle" placeholder="Title" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <textarea id="announcementContent" placeholder="Content" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; height:100px; resize:vertical;"></textarea>
+            <button onclick="saveAnnouncement()" style="margin:10px 0;">Save</button>
+            <button onclick="closeAnnouncementForm()" style="background:#999;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Sermon Modal -->
+    <div id="sermonModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%;">
+            <h2>Add Sermon</h2>
+            <input type="text" id="sermonTitle" placeholder="Sermon Title" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="text" id="sermonSpeaker" placeholder="Speaker Name" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="date" id="sermonDate" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <textarea id="sermonDescription" placeholder="Description" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; height:100px; resize:vertical;"></textarea>
+            <button onclick="saveSermon()" style="margin:10px 0;">Save</button>
+            <button onclick="closeSermonForm()" style="background:#999;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Prayer Modal -->
+    <div id="prayerModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%;">
+            <h2>Add Prayer Request</h2>
+            <input type="text" id="prayerTitle" placeholder="Title" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <textarea id="prayerContent" placeholder="Prayer request details" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; height:100px; resize:vertical;"></textarea>
+            <button onclick="savePrayer()" style="margin:10px 0;">Save</button>
+            <button onclick="closePrayerForm()" style="background:#999;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Member Modal -->
+    <div id="memberModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto;">
+            <h2>Add Member</h2>
+            <input type="text" id="memberName" placeholder="Member Name" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="email" id="memberEmail" placeholder="Email" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <input type="tel" id="memberPhone" placeholder="Phone" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <select id="memberType" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+                <option value="">Select Member Type</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Visitor">Visitor</option>
+            </select>
+            <input type="date" id="memberDOB" placeholder="Date of Birth" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <select id="memberBaptism" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+                <option value="">Baptism Status</option>
+                <option value="Baptized">Baptized</option>
+                <option value="Not Baptized">Not Baptized</option>
+            </select>
+            <input type="text" id="memberAddress" placeholder="Address" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px;">
+            <button onclick="saveMember()" style="margin:10px 0;">Save</button>
+            <button onclick="closeMemberForm()" style="background:#999;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Scripts in order -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/admin-app.js"></script>
+</body>
+</html>

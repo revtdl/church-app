@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitefield Methodist Church</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <span>☰</span>
+            <span class="header-title">Whitefield Methodist Church</span>
+            <span>📍</span>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Home Screen -->
+            <div id="home" class="screen active">
+                <div class="section-title">Home</div>
+                <div style="width: 100%; height: 280px; background: linear-gradient(135deg, #00BCD4 0%, #2196F3 50%, #1565C0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 72px; margin-bottom: 16px;">⛪</div>
+
+                <div class="verse-card">
+                    <div class="verse-label">VERSE OF THE DAY</div>
+                    <div class="verse-text" id="verseText">"For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."</div>
+                    <div class="verse-ref" id="verseRef">John 3:16</div>
+                </div>
+            </div>
+
+            <!-- Featured/Menu Screen -->
+            <div id="featured" class="screen">
+                <div class="section-title">Menu</div>
+
+                <!-- From the Pastor Card -->
+                <div onclick="showScreen('announcements')" style="background: white; border: 2px solid #2196F3; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); flex-shrink: 0;"></div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">From the Pastor</div></div>
+                </div>
+
+                <!-- Events Card -->
+                <div onclick="showScreen('events')" style="background: white; border: 2px solid #9C27B0; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">📅</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Events</div></div>
+                </div>
+
+                <!-- Sermons Card -->
+                <div onclick="showScreen('sermons')" style="background: white; border: 2px solid #FFA500; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">🎤</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Sermons</div></div>
+                </div>
+
+                <!-- Bible Study Card -->
+                <div onclick="showScreen('prayer')" style="background: white; border: 2px solid #00BCD4; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">📖</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Bible Study</div></div>
+                </div>
+
+                <!-- Prayers Card -->
+                <div style="background: white; border: 2px solid #F44336; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">❤️</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
+                </div>
+
+                <!-- Offering Button -->
+                <div style="background: #4CAF50; color: white; border-radius: 12px; padding: 16px; text-align: center; font-weight: bold; cursor: pointer; font-size: 16px;">OFFERING</div>
+            </div>
+
+            <!-- Members Screen -->
+            <div id="members" class="screen">
+                <div class="section-title">Members</div>
+                <div id="membersList"></div>
+            </div>
+
+            <!-- Sermons Screen -->
+            <div id="sermons" class="screen">
+                <div class="section-title">Sermons</div>
+                <div id="sermonsList" class="card">Loading sermons...</div>
+            </div>
+
+            <!-- Events Screen -->
+            <div id="events" class="screen">
+                <div class="section-title">Events</div>
+                <div class="card">No upcoming events</div>
+            </div>
+
+            <!-- Prayer Screen -->
+            <div id="prayer" class="screen">
+                <div class="section-title">Bible Study</div>
+                <div class="card">Coming soon...</div>
+            </div>
+
+            <!-- Offering Screen -->
+            <div id="offering" class="screen">
+                <div class="section-title">Offering</div>
+                <div class="card">Giving information coming soon...</div>
+            </div>
+
+            <!-- Announcements Screen -->
+            <div id="announcements" class="screen">
+                <div style="margin-bottom: 12px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
+                </div>
+                <div class="section-title">From the Pastor</div>
+                <div id="announcementsList" style="padding: 0;">Loading announcements...</div>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchTab(0, this)">🏠 Home</div>
+            <div class="nav-item" onclick="switchTab(1, this)">⭐ Menu</div>
+            <div class="nav-item" onclick="switchTab(2, this)">🎤 Sermons</div>
+            <div class="nav-item" onclick="switchTab(3, this)">📅 Events</div>
+            <div class="nav-item" onclick="switchTab(4, this)">👥 Members</div>
+            <div class="nav-item" onclick="switchTab(5, this)">🎁 Offering</div>
+        </div>
+    </div>
+
+    <!-- Member Details Modal -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalMemberName" style="margin: 0; color: #333;"></h2>
+                <button class="modal-close" onclick="closeMemberModal()">×</button>
+            </div>
+            <div class="modal-info">
+                <div class="info-row">
+                    <div class="info-label">Type</div>
+                    <div class="info-value" id="modalMemberType"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email</div>
+                    <div class="info-value" id="modalMemberEmail"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value" id="modalMemberPhone"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Baptism Status</div>
+                    <div class="info-value" id="modalMemberBaptism"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts in order -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/mobile-app.js"></script>
+</body>
+</html>
