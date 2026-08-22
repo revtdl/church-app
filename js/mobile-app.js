@@ -1,6 +1,96 @@
-// Initialize - hide all screens except home
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page loaded, initializing screens...');
+// Member Authentication
+let currentMember = null;
+
+// Member Database (In production, use Firebase)
+const MEMBER_DATABASE = {
+    '9999999999': { password: 'member123', name: 'John Doe' },
+    '8888888888': { password: 'member123', name: 'Jane Smith' },
+    '7777777777': { password: 'member123', name: 'David Johnson' }
+};
+
+function handleMobileLogin() {
+    const phone = document.getElementById('memberPhone').value;
+    const password = document.getElementById('memberPassword').value;
+    const errorDiv = document.getElementById('mobileLoginError');
+
+    if (!phone || !password) {
+        errorDiv.textContent = '❌ Please enter phone and password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Check credentials
+    if (MEMBER_DATABASE[phone] && MEMBER_DATABASE[phone].password === password) {
+        // Login successful
+        currentMember = {
+            phone: phone,
+            name: MEMBER_DATABASE[phone].name,
+            loginTime: new Date()
+        };
+
+        localStorage.setItem('memberUser', JSON.stringify(currentMember));
+        showApp();
+        errorDiv.style.display = 'none';
+    } else {
+        errorDiv.textContent = '❌ Invalid phone or password';
+        errorDiv.style.display = 'block';
+    }
+}
+
+function guestLogin() {
+    currentMember = {
+        phone: 'guest',
+        name: 'Guest User',
+        loginTime: new Date()
+    };
+
+    localStorage.setItem('memberUser', JSON.stringify(currentMember));
+    showApp();
+}
+
+function logoutMember() {
+    if (confirm('Are you sure you want to logout?')) {
+        currentMember = null;
+        localStorage.removeItem('memberUser');
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('memberPhone').value = '';
+        document.getElementById('memberPassword').value = '';
+    }
+}
+
+function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'flex';
+    initializeApp();
+}
+
+function checkMemberLogin() {
+    const savedMember = localStorage.getItem('memberUser');
+    if (savedMember) {
+        currentMember = JSON.parse(savedMember);
+        showApp();
+    }
+}
+
+function showMemberMenu() {
+    alert('Welcome, ' + (currentMember?.name || 'Guest') + '!');
+}
+
+function initializeApp() {
+    console.log('App initialized for:', currentMember?.name);
+
+    // Sign in anonymously to enable Firebase access
+    firebase.auth().signInAnonymously().then(() => {
+        console.log('Auth success - user logged in');
+        setTimeout(() => {
+            loadEventsRealtime();
+            loadSermonsRealtime();
+        }, 1000);
+    }).catch(error => {
+        console.error('Auth error:', error);
+    });
+
     const screens = document.querySelectorAll('.screen');
     console.log('Found screens:', screens.length);
     screens.forEach(s => {
@@ -9,6 +99,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     updateDailyVerse();
+}
+
+// Check login on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkMemberLogin();
 });
 
 // Navigation Functions
@@ -23,6 +118,8 @@ function showScreen(id) {
         console.log('Screen displayed:', id);
         if (id === 'announcements') {
             loadAnnouncementsRealtime();
+        } else if (id === 'prayers') {
+            loadPrayerRealtime();
         }
     } else {
         console.error('Screen not found:', id);
@@ -33,11 +130,10 @@ function switchTab(index, element) {
     console.log('Tab clicked:', index);
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     element.classList.add('active');
-    const screens = ['home', 'featured', 'sermons', 'events', 'members', 'offering'];
+    const screens = ['home', 'featured', 'members', 'offering'];
     console.log('Switching to screen:', screens[index]);
     showScreen(screens[index]);
-    if (index === 2) loadSermonsRealtime();
-    if (index === 4) {
+    if (index === 2) {
         console.log('Members tab clicked, loading members...');
         loadMembersRealtime();
     }
@@ -137,38 +233,46 @@ function updateDailyVerse() {
     document.getElementById('verseRef').textContent = verse.ref;
 }
 
-// Load Announcements
-async function loadAnnouncementsRealtime() {
+// Load Announcements with Real-time Sync
+function loadAnnouncementsRealtime() {
     const announcementsList = document.getElementById('announcementsList');
     if (!announcementsList) return;
 
+    console.log('Setting up real-time announcements listener...');
+    announcementsList.innerHTML = 'Loading announcements...';
+
     try {
-        console.log('Loading announcements from Firebase...');
-        const snapshot = await db.collection('announcements').get();
-        console.log('Announcements found:', snapshot.size);
+        db.collection('announcements').orderBy('createdAt', 'desc').onSnapshot(
+            (snapshot) => {
+                console.log('Announcements snapshot received:', snapshot.size);
+                if (snapshot.size > 0) {
+                    let html = '';
+                    snapshot.forEach(doc => {
+                        const a = doc.data();
+                        const title = a.title || a.announcementTitle || 'Announcement';
+                        const content = a.content || a.announcementContent || '';
+                        let date = 'Today';
+                        if (a.createdAt) date = new Date(a.createdAt.seconds * 1000).toLocaleDateString();
+                        else if (a.date) date = a.date;
 
-        if (snapshot.size > 0) {
-            let html = '';
-            snapshot.forEach(doc => {
-                const a = doc.data();
-                const title = a.title || a.announcementTitle || 'Announcement';
-                const content = a.content || a.announcementContent || '';
-                let date = 'Today';
-                if (a.createdAt) date = new Date(a.createdAt.seconds * 1000).toLocaleDateString();
-                else if (a.date) date = a.date;
-
-                html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
-                html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
-                html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">' + date + '</div>';
-                html += '<div style="font-size: 14px; color: #666; line-height: 1.5;">' + content + '</div>';
-                html += '</div>';
-            });
-            announcementsList.innerHTML = html;
-        } else {
-            announcementsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No announcements yet</div>';
-        }
+                        html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
+                        html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
+                        html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">' + date + '</div>';
+                        html += '<div style="font-size: 14px; color: #666; line-height: 1.5;">' + content + '</div>';
+                        html += '</div>';
+                    });
+                    announcementsList.innerHTML = html;
+                } else {
+                    announcementsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No announcements yet</div>';
+                }
+            },
+            (error) => {
+                console.error('Error loading announcements:', error);
+                announcementsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error: ' + error.message + '</div>';
+            }
+        );
     } catch (error) {
-        console.error('Error loading announcements:', error);
+        console.error('Error setting up announcements listener:', error);
         announcementsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error: ' + error.message + '</div>';
     }
 }
@@ -176,11 +280,15 @@ async function loadAnnouncementsRealtime() {
 // Load Events
 async function loadEventsRealtime() {
     const eventsList = document.getElementById('eventsList');
-    if (!eventsList) return;
+    if (!eventsList) {
+        console.log('eventsList element not found');
+        return;
+    }
     try {
         console.log('Loading events from Firebase...');
         const snapshot = await db.collection('events').get();
         console.log('Events found:', snapshot.size);
+
         if (snapshot.size > 0) {
             let html = '';
             snapshot.forEach(doc => {
@@ -189,6 +297,7 @@ async function loadEventsRealtime() {
                 const date = e.date || e.eventDate || e.Date || 'TBD';
                 const location = e.location || e.Location || '';
                 const description = e.description || e.Description || '';
+                console.log('Event:', title, date);
                 html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
                 html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
                 html += '<div style="font-size: 12px; color: #999; margin-bottom: 4px;">📅 ' + date + '</div>';
@@ -237,53 +346,333 @@ async function loadSermonsRealtime() {
     }
 }
 
-// Load Prayers
-async function loadPrayerRealtime() {
+// Load Prayers with Real-time Sync
+function loadPrayerRealtime() {
     const prayerList = document.getElementById('prayerList');
     if (!prayerList) return;
+
+    console.log('Setting up real-time prayer listener...');
+    prayerList.innerHTML = 'Loading prayers...';
+
     try {
-        const snapshot = await db.collection('prayers').orderBy('createdAt', 'desc').limit(20).get();
-        if (snapshot.size > 0) {
-            let html = '';
-            snapshot.forEach(doc => {
-                const p = doc.data();
-                const title = p.title || 'Prayer Request';
-                const content = p.content || '';
-                const date = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : 'No date';
-                html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
-                html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
-                html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">' + date + '</div>';
-                html += '<div style="font-size: 14px; color: #666;">' + content + '</div>';
-                html += '</div>';
-            });
-            prayerList.innerHTML = html;
-        } else {
-            prayerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No prayer requests</div>';
-        }
+        db.collection('prayers').orderBy('createdAt', 'desc').limit(20).onSnapshot(
+            (snapshot) => {
+                console.log('Prayers snapshot received:', snapshot.size);
+                if (snapshot.size > 0) {
+                    let html = '';
+                    snapshot.forEach(doc => {
+                        const p = doc.data();
+                        const title = p.title || 'Prayer Request';
+                        const content = p.content || '';
+                        const date = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : 'No date';
+                        html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
+                        html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
+                        html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">' + date + '</div>';
+                        html += '<div style="font-size: 14px; color: #666;">' + content + '</div>';
+                        html += '</div>';
+                    });
+                    prayerList.innerHTML = html;
+                } else {
+                    prayerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No prayer requests</div>';
+                }
+            },
+            (error) => {
+                console.error('Error loading prayers:', error);
+                prayerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error loading prayers</div>';
+            }
+        );
     } catch (error) {
-        console.error('Error loading prayers:', error);
+        console.error('Error setting up prayer listener:', error);
         prayerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error loading prayers</div>';
     }
 }
 
-// Load Offering
-async function loadOfferingRealtime() {
-    const offeringContent = document.getElementById('offeringContent');
-    if (!offeringContent) return;
-    try {
-        const snapshot = await db.collection('offerings').doc('info').get();
-        if (snapshot.exists) {
-            const data = snapshot.data();
-            let html = '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px;">';
-            html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 12px;">Giving Information</div>';
-            html += '<div style="font-size: 14px; color: #666; line-height: 1.6;">' + (data.description || 'Information coming soon...') + '</div>';
-            html += '</div>';
-            offeringContent.innerHTML = html;
-        } else {
-            offeringContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Giving information coming soon</div>';
+// Razorpay Integration for Indian Payments (INR)
+let currentOfferingAmount = 0;
+
+function setOfferingAmount(amount) {
+    currentOfferingAmount = amount;
+    document.getElementById('customAmount').value = amount;
+}
+
+function initiateRazorpayPayment() {
+    const amount = parseInt(document.getElementById('customAmount').value || currentOfferingAmount);
+    const name = document.getElementById('offeringName').value || 'Anonymous';
+    const type = document.getElementById('offeringType').value;
+    const status = document.getElementById('offeringStatus');
+
+    if (!amount || amount <= 0) {
+        status.textContent = '❌ Please enter a valid amount';
+        status.style.display = 'block';
+        status.style.color = '#f44336';
+        return;
+    }
+
+    status.textContent = '⏳ Opening payment gateway...';
+    status.style.display = 'block';
+    status.style.color = '#2196F3';
+
+    // Razorpay Payment Options
+    const options = {
+        key: 'rzp_live_YOUR_KEY_ID', // Replace with your Razorpay Key ID
+        amount: amount * 100, // Amount in paise (₹ * 100)
+        currency: 'INR',
+        name: 'Whitefield Methodist Church',
+        description: type + ' Offering',
+        image: 'https://via.placeholder.com/100', // Church logo URL
+        prefill: {
+            name: name,
+            email: 'donor@church.org',
+            contact: '9999999999'
+        },
+        notes: {
+            offeringType: type,
+            churchName: 'Whitefield Methodist Church'
+        },
+        theme: {
+            color: '#1F51B6'
+        },
+        handler: async function(response) {
+            await handleRazorpaySuccess(response, amount, name, type);
+        },
+        modal: {
+            ondismiss: function() {
+                status.textContent = '❌ Payment cancelled';
+                status.style.color = '#f44336';
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
         }
+    };
+
+    // Load Razorpay Script and open payment dialog
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = function() {
+        const rzp1 = new Razorpay(options);
+        rzp1.open();
+    };
+    script.onerror = function() {
+        status.textContent = '❌ Payment gateway error. Please try again.';
+        status.style.color = '#f44336';
+    };
+    document.head.appendChild(script);
+}
+
+async function handleRazorpaySuccess(response, amount, name, type) {
+    const status = document.getElementById('offeringStatus');
+
+    status.textContent = '⏳ Verifying payment...';
+    status.style.color = '#2196F3';
+
+    try {
+        // Save offering with payment details to database
+        const offeringRef = await db.collection('offerings').add({
+            memberName: name,
+            amount: amount,
+            currency: 'INR',
+            date: new Date().toISOString().split('T')[0],
+            type: type,
+            paymentMethod: 'Razorpay',
+            paymentId: response.razorpay_payment_id,
+            orderId: response.razorpay_order_id || '',
+            signature: response.razorpay_signature || '',
+            status: 'Completed',
+            notes: 'Submitted from mobile app via Razorpay',
+            createdAt: new Date(),
+            timestamp: new Date().toISOString()
+        });
+
+        status.textContent = '✅ Payment successful! Thank you for your generous offering. Your transaction ID: ' + response.razorpay_payment_id;
+        status.style.color = '#4CAF50';
+
+        setTimeout(() => {
+            resetOfferingForm();
+            goBack();
+        }, 3000);
     } catch (error) {
-        console.error('Error loading offering info:', error);
-        offeringContent.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Error loading information</div>';
+        console.error('Error saving offering:', error);
+        status.textContent = '⚠️ Payment received but error saving to database. Please contact us.';
+        status.style.color = '#FF9800';
+
+        setTimeout(() => {
+            status.style.display = 'none';
+        }, 5000);
+    }
+}
+
+async function submitOfferingManual() {
+    const amount = parseInt(document.getElementById('customAmount').value || currentOfferingAmount);
+    const name = document.getElementById('offeringName').value || 'Anonymous';
+    const type = document.getElementById('offeringType').value;
+    const status = document.getElementById('offeringStatus');
+
+    if (!amount || amount <= 0) {
+        status.textContent = '❌ Please enter a valid amount';
+        status.style.display = 'block';
+        status.style.color = '#f44336';
+        return;
+    }
+
+    status.textContent = '⏳ Recording offering...';
+    status.style.display = 'block';
+    status.style.color = '#2196F3';
+
+    try {
+        await db.collection('offerings').add({
+            memberName: name,
+            amount: amount,
+            currency: 'INR',
+            date: new Date().toISOString().split('T')[0],
+            type: type,
+            paymentMethod: 'Manual Record',
+            status: 'Recorded',
+            notes: 'Submitted from mobile app - no online payment',
+            createdAt: new Date(),
+            timestamp: new Date().toISOString()
+        });
+
+        status.textContent = '✅ Offering recorded successfully! Thank you for your generosity.';
+        status.style.color = '#4CAF50';
+
+        setTimeout(() => {
+            resetOfferingForm();
+            goBack();
+        }, 2000);
+    } catch (error) {
+        console.error('Error:', error);
+        status.textContent = '❌ Error: ' + error.message;
+        status.style.color = '#f44336';
+    }
+}
+
+function resetOfferingForm() {
+    document.getElementById('customAmount').value = '';
+    document.getElementById('offeringName').value = '';
+    document.getElementById('offeringType').value = 'General';
+    document.getElementById('offeringStatus').style.display = 'none';
+    currentOfferingAmount = 0;
+}
+
+// UPI Integration (Direct, 0% charges)
+// ⚠️ UPDATE THESE WITH YOUR CHURCH DETAILS:
+const CHURCH_UPI_ID = 'whitefieldchurch@hdfc'; // Replace with your actual UPI ID
+const CHURCH_NAME = 'Whitefield Methodist Church'; // Replace with your church name
+
+function showPaymentTab(tab) {
+    const upiTab = document.getElementById('upiTab');
+    const razorpayTab = document.getElementById('razorpayTab');
+    const tabUPI = document.getElementById('tabUPI');
+    const tabRazorpay = document.getElementById('tabRazorpay');
+
+    if (tab === 'upi') {
+        upiTab.style.display = 'block';
+        razorpayTab.style.display = 'none';
+        tabUPI.style.background = '#1F51B6';
+        tabUPI.style.color = 'white';
+        tabRazorpay.style.background = '#f0f0f0';
+        tabRazorpay.style.color = '#333';
+    } else {
+        upiTab.style.display = 'none';
+        razorpayTab.style.display = 'block';
+        tabUPI.style.background = '#f0f0f0';
+        tabUPI.style.color = '#333';
+        tabRazorpay.style.background = '#1F51B6';
+        tabRazorpay.style.color = 'white';
+    }
+}
+
+function copyUPIId() {
+    const upiId = CHURCH_UPI_ID;
+    const el = document.createElement('textarea');
+    el.value = upiId;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+
+    const upiStatus = document.getElementById('upiStatus');
+    upiStatus.textContent = '✅ UPI ID copied to clipboard!';
+    upiStatus.style.display = 'block';
+    upiStatus.style.color = '#4CAF50';
+    setTimeout(() => {
+        upiStatus.style.display = 'none';
+    }, 2000);
+}
+
+function initiateUPIPayment() {
+    const amount = parseInt(document.getElementById('customAmount').value || currentOfferingAmount);
+    const name = document.getElementById('offeringName').value || 'Donor';
+    const type = document.getElementById('offeringType').value || 'Offering';
+    const upiStatus = document.getElementById('upiStatus');
+
+    if (!amount || amount <= 0) {
+        upiStatus.textContent = '❌ Please enter a valid amount';
+        upiStatus.style.display = 'block';
+        upiStatus.style.color = '#f44336';
+        return;
+    }
+
+    // Create UPI payment URL (UPI deep linking)
+    // Format: upi://pay?pa=UPI_ID&pn=NAME&am=AMOUNT&tn=TRANSACTION_NOTE
+    const upiUrl = `upi://pay?pa=${CHURCH_UPI_ID}&pn=${encodeURIComponent(CHURCH_NAME)}&am=${amount}&tn=${encodeURIComponent(type + ' - ' + name)}&tr=${Date.now()}`;
+
+    upiStatus.textContent = '⏳ Opening UPI app...';
+    upiStatus.style.display = 'block';
+    upiStatus.style.color = '#2196F3';
+
+    // Try to open UPI app
+    window.location.href = upiUrl;
+
+    // Fallback: Show manual instruction after 2 seconds
+    setTimeout(() => {
+        const confirmed = confirm(
+            `UPI Payment Details:\n\n` +
+            `Amount: ₹${amount}\n` +
+            `To: ${CHURCH_NAME}\n` +
+            `UPI ID: ${CHURCH_UPI_ID}\n\n` +
+            `Click OK after payment is done.\n` +
+            `(If UPI app didn't open, please open your UPI app manually and send ₹${amount} to ${CHURCH_UPI_ID})`
+        );
+
+        if (confirmed) {
+            recordUPIPayment(amount, name, type);
+        }
+    }, 2000);
+}
+
+async function recordUPIPayment(amount, name, type) {
+    const upiStatus = document.getElementById('upiStatus');
+
+    upiStatus.textContent = '⏳ Recording UPI payment...';
+    upiStatus.style.color = '#2196F3';
+
+    try {
+        await db.collection('offerings').add({
+            memberName: name || 'Anonymous',
+            amount: amount,
+            currency: 'INR',
+            date: new Date().toISOString().split('T')[0],
+            type: type,
+            paymentMethod: 'UPI Direct',
+            upiId: CHURCH_UPI_ID,
+            status: 'Pending Verification',
+            notes: 'UPI payment from mobile app - manual verification pending',
+            createdAt: new Date(),
+            timestamp: new Date().toISOString()
+        });
+
+        upiStatus.textContent = '✅ Payment recorded! Our team will verify and confirm. Thank you!';
+        upiStatus.style.color = '#4CAF50';
+
+        setTimeout(() => {
+            resetOfferingForm();
+            goBack();
+        }, 3000);
+    } catch (error) {
+        console.error('Error:', error);
+        upiStatus.textContent = '❌ Error: ' + error.message;
+        upiStatus.style.color = '#f44336';
     }
 }

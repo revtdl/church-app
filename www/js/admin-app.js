@@ -1,0 +1,1132 @@
+// Admin Dashboard Functions
+let allMembers = []; // Store all members for filtering
+let currentAdminUser = null; // Store logged-in admin info
+
+// Admin Credentials (Store these securely in production)
+const ADMIN_ACCOUNTS = {
+    'admin@church.com': 'admin123', // Change these after first login!
+    'pastor@church.com': 'pastor123'
+};
+
+function handleAdminLogin(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('adminEmail').value;
+    const password = document.getElementById('adminPassword').value;
+    const errorDiv = document.getElementById('loginError');
+
+    // Validate credentials
+    if (ADMIN_ACCOUNTS[email] && ADMIN_ACCOUNTS[email] === password) {
+        // Login successful
+        currentAdminUser = {
+            email: email,
+            name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+            loginTime: new Date()
+        };
+
+        // Save to localStorage (persists on browser refresh)
+        localStorage.setItem('adminUser', JSON.stringify(currentAdminUser));
+
+        // Hide login, show dashboard
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'flex';
+
+        // Update header with admin name
+        document.getElementById('currentAdminName').textContent = currentAdminUser.name;
+        document.getElementById('userInitial').textContent = currentAdminUser.name.charAt(0).toUpperCase();
+
+        // Firebase authentication
+        firebase.auth().signInAnonymously().then(() => {
+            console.log('✅ Firebase auth success');
+            // Now load data
+            setTimeout(() => {
+                loadMembers();
+                loadAnnouncements();
+                loadEvents();
+                loadSermons();
+                loadPrayers();
+            }, 1000);
+        }).catch(error => {
+            console.error('❌ Firebase error:', error);
+            errorDiv.textContent = '❌ Firebase error: ' + error.message;
+            errorDiv.style.display = 'block';
+        });
+
+        errorDiv.style.display = 'none';
+    } else {
+        // Login failed
+        errorDiv.textContent = '❌ Invalid email or password';
+        errorDiv.style.display = 'block';
+    }
+}
+
+function logoutAdmin() {
+    if (confirm('Are you sure you want to logout?')) {
+        currentAdminUser = null;
+        localStorage.removeItem('adminUser');
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('mainContainer').style.display = 'none';
+        document.getElementById('adminEmail').value = '';
+        document.getElementById('adminPassword').value = '';
+    }
+}
+
+function demoLogin() {
+    // For demo purposes - auto-login
+    currentAdminUser = {
+        email: 'demo@church.com',
+        name: 'Demo Admin',
+        loginTime: new Date()
+    };
+
+    localStorage.setItem('adminUser', JSON.stringify(currentAdminUser));
+
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'flex';
+
+    // Update header
+    document.getElementById('currentAdminName').textContent = 'Demo Admin';
+    document.getElementById('userInitial').textContent = 'D';
+
+    setTimeout(() => {
+        loadMembers();
+    }, 500);
+}
+
+// Check if user is already logged in on page load
+function checkAdminLogin() {
+    const savedUser = localStorage.getItem('adminUser');
+    if (savedUser) {
+        currentAdminUser = JSON.parse(savedUser);
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'flex';
+        document.getElementById('currentAdminName').textContent = currentAdminUser.name;
+        document.getElementById('userInitial').textContent = currentAdminUser.name.charAt(0).toUpperCase();
+
+        // Firebase authentication
+        firebase.auth().signInAnonymously().then(() => {
+            console.log('✅ Firebase auth success for saved user');
+            setTimeout(() => {
+                loadMembers();
+                loadAnnouncements();
+                loadEvents();
+                loadSermons();
+                loadPrayers();
+            }, 500);
+        }).catch(error => {
+            console.error('❌ Firebase error:', error);
+        });
+    }
+}
+
+// Run check when page loads
+window.addEventListener('DOMContentLoaded', checkAdminLogin);
+
+function handleLogin(e) {
+    e.preventDefault();
+    demoLogin();
+}
+
+function logout() {
+    document.getElementById('mainContainer').style.display = 'none';
+    document.getElementById('loginSection').style.display = 'block';
+}
+
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (event.target) event.target.classList.add('active');
+    if (id === 'events') loadEvents();
+    else if (id === 'announcements') loadAnnouncements();
+    else if (id === 'sermons') loadSermons();
+    else if (id === 'prayers') loadPrayers();
+    else if (id === 'members') loadMembers();
+}
+
+async function loadEvents() {
+    try {
+        console.log('📥 Loading events...');
+        const snapshot = await db.collection('events').get();
+        const tbody = document.getElementById('eventsTable');
+        if (snapshot.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px;">No events yet</td></tr>';
+            return;
+        }
+        let html = '';
+        snapshot.forEach(doc => {
+            const e = doc.data();
+            const docId = doc.id;
+            html += '<tr>';
+            html += '<td>' + (e.eventName || '') + '</td>';
+            html += '<td>' + (e.date || '') + '</td>';
+            html += '<td>' + (e.location || '') + '</td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editEvent(\'' + docId + '\')">></button></td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+        console.log('✅ Events loaded');
+    } catch(err) {
+        console.error('❌ Error:', err);
+        const tbody = document.getElementById('eventsTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="color: #f44336;">❌ Error: ' + err.message + '</td></tr>';
+    }
+}
+
+async function loadAnnouncements() {
+    try {
+        console.log('📥 Loading announcements...');
+        const snapshot = await db.collection('announcements').get();
+        const tbody = document.getElementById('announcementsTable');
+        if (snapshot.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 30px;">No announcements yet</td></tr>';
+            return;
+        }
+        let html = '';
+        snapshot.forEach(doc => {
+            const a = doc.data();
+            const docId = doc.id;
+            let content = (a.content || '');
+            if (content.length > 50) content = content.substring(0, 50) + '...';
+            html += '<tr>';
+            html += '<td>' + (a.title || '') + '</td>';
+            html += '<td>' + content + '</td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editAnnouncement(\'' + docId + '\')">></button></td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+        console.log('✅ Announcements loaded');
+    } catch(err) {
+        console.error('❌ Error:', err);
+        const tbody = document.getElementById('announcementsTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="color: #f44336;">❌ Error: ' + err.message + '</td></tr>';
+    }
+}
+
+async function loadSermons() {
+    try {
+        console.log('📥 Loading sermons...');
+        const snapshot = await db.collection('sermons').get();
+        const tbody = document.getElementById('sermonsTable');
+        if (snapshot.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px;">No sermons yet</td></tr>';
+            return;
+        }
+        let html = '';
+        snapshot.forEach(doc => {
+            const s = doc.data();
+            const docId = doc.id;
+            html += '<tr>';
+            html += '<td>' + (s.title || '') + '</td>';
+            html += '<td>' + (s.speaker || '') + '</td>';
+            html += '<td>' + (s.sermonDate || '') + '</td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editSermon(\'' + docId + '\')">></button></td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+        console.log('✅ Sermons loaded');
+    } catch(err) {
+        console.error('❌ Error:', err);
+        const tbody = document.getElementById('sermonsTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="color: #f44336;">❌ Error: ' + err.message + '</td></tr>';
+    }
+}
+
+async function loadPrayers() {
+    try {
+        console.log('📥 Loading prayers...');
+        const snapshot = await db.collection('prayers').get();
+        const tbody = document.getElementById('prayersTable');
+        if (snapshot.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 30px;">No prayers yet</td></tr>';
+            return;
+        }
+        let html = '';
+        snapshot.forEach(doc => {
+            const p = doc.data();
+            const docId = doc.id;
+            let content = (p.content || '');
+            if (content.length > 50) content = content.substring(0, 50) + '...';
+            html += '<tr>';
+            html += '<td>' + (p.title || '') + '</td>';
+            html += '<td>' + content + '</td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editPrayer(\'' + docId + '\')">></button></td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+        console.log('✅ Prayers loaded');
+    } catch(err) {
+        console.error('❌ Error:', err);
+        const tbody = document.getElementById('prayersTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="color: #f44336;">❌ Error: ' + err.message + '</td></tr>';
+    }
+}
+
+async function loadMembers() {
+    try {
+        console.log('📥 Loading members from Firebase...');
+        const snapshot = await db.collection('members').get();
+        console.log('✅ Members loaded:', snapshot.size, 'records');
+
+        allMembers = [];
+        snapshot.forEach(doc => {
+            allMembers.push({id: doc.id, ...doc.data()});
+        });
+
+        console.log('📊 Total members:', allMembers.length);
+        displayMembers(allMembers);
+        renderMemberGallery();
+        populateAreaOptions();
+    } catch(err) {
+        console.error('❌ Error loading members:', err);
+        const tbody = document.getElementById('membersTable');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #f44336;">
+                ❌ Error loading members: ${err.message}
+            </td></tr>`;
+        }
+    }
+}
+
+function displayMembers(members) {
+    const tbody = document.getElementById('membersTable');
+    if (members.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #999;">No members found</td></tr>';
+        return;
+    }
+    let html = '';
+    members.forEach(m => {
+        const docId = m.id;
+        const name = m.name || 'N/A';
+        const email = m.email || '-';
+        const phone = m.phone || '-';
+        const status = m.membershipStatus || 'Member';
+
+        // Color based on status
+        let badgeColor = '#3b82f6';
+        if (status === 'Inactive') badgeColor = '#ef4444';
+        else if (status === 'Active') badgeColor = '#10b981';
+
+        html += '<tr style="border-bottom: 1px solid #e5e7eb; hover:background: #f9fafb;">';
+        html += '<td style="padding: 15px;"><strong style="color: #333;">' + name + '</strong></td>';
+        html += '<td style="padding: 15px; color: #666; font-size: 13px;">' + email + '</td>';
+        html += '<td style="padding: 15px; color: #666; font-size: 13px;">' + phone + '</td>';
+        html += '<td style="padding: 15px;"><span style="display: inline-block; padding: 6px 12px; background: ' + badgeColor + '; color: white; border-radius: 4px; font-size: 12px; font-weight: 600;">' + status + '</span></td>';
+        html += '<td style="padding: 15px; text-align: center;">';
+        html += '<button onclick="editMember(\'' + docId + '\')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 6px;">Edit</button>';
+        html += '<button onclick="deleteMember(\'' + docId + '\')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Delete</button>';
+        html += '</td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function calculateAge(dateOfBirth) {
+    if (!dateOfBirth) return null;
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age > 0 ? age : null;
+}
+
+function switchMemberView(view) {
+    const listView = document.querySelector('.list-view');
+    const galleryView = document.querySelector('.gallery-view-container');
+    const tabs = document.querySelectorAll('.view-tab');
+
+    if (view === 'list') {
+        if (listView) listView.classList.add('active');
+        if (galleryView) galleryView.classList.remove('active');
+        tabs[0].classList.add('active');
+        tabs[1].classList.remove('active');
+    } else if (view === 'gallery') {
+        if (listView) listView.classList.remove('active');
+        if (galleryView) galleryView.classList.add('active');
+        tabs[0].classList.remove('active');
+        tabs[1].classList.add('active');
+        renderMemberGallery();
+    }
+}
+
+function renderMemberGallery() {
+    const gallery = document.getElementById('membersGallery');
+    if (!gallery) return;
+
+    if (allMembers.length === 0) {
+        gallery.innerHTML = '<div style="text-align: center; padding: 60px 30px; color: #999; grid-column: 1/-1;">No members to display</div>';
+        return;
+    }
+
+    let html = '';
+    allMembers.forEach(m => {
+        const initial = (m.name || 'M').charAt(0).toUpperCase();
+        const status = m.membershipStatus || 'Member';
+        const avatarStyle = m.profileImage
+            ? 'background-image: url(' + m.profileImage + '); background-size: cover; background-position: center;'
+            : '';
+        html += '<div class="gallery-card" onclick="editMember(\'' + m.id + '\')">';
+        html += '<div class="gallery-avatar" style="' + avatarStyle + '">' + (m.profileImage ? '' : initial) + '</div>';
+        html += '<div class="gallery-info">';
+        html += '<div class="gallery-name">' + (m.name || 'N/A') + '</div>';
+        html += '<div class="gallery-status">' + status + '</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+    gallery.innerHTML = html;
+}
+
+// Modal Functions
+function openEventForm() {
+    document.getElementById('eventModal').style.display = 'flex';
+}
+
+function closeEventForm() {
+    document.getElementById('eventModal').style.display = 'none';
+}
+
+function openAnnouncementForm() {
+    document.getElementById('announcementModal').style.display = 'flex';
+}
+
+function closeAnnouncementForm() {
+    document.getElementById('announcementModal').style.display = 'none';
+}
+
+function openSermonForm() {
+    document.getElementById('sermonModal').style.display = 'flex';
+}
+
+function closeSermonForm() {
+    document.getElementById('sermonModal').style.display = 'none';
+}
+
+function openPrayerForm() {
+    document.getElementById('prayerModal').style.display = 'flex';
+}
+
+function closePrayerForm() {
+    document.getElementById('prayerModal').style.display = 'none';
+}
+
+function openMemberForm() {
+    window.currentMemberId = null;
+    const titleEl = document.querySelector('.memberFormTitle');
+    if (titleEl) titleEl.textContent = 'Add Member';
+    resetMemberForm();
+    const modal = document.getElementById('memberModal');
+    if (modal) modal.classList.add('active');
+}
+
+async function deleteMember(memberId) {
+    if (!confirm('Delete this member? This action cannot be undone.')) return;
+    try {
+        await db.collection('members').doc(memberId).delete();
+        alert('Member deleted!');
+        loadMembers();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function editMember(memberId) {
+    try {
+        console.log('Editing member:', memberId);
+        const doc = await db.collection('members').doc(memberId).get();
+        if (!doc.exists) {
+            alert('Member not found');
+            return;
+        }
+
+        const m = doc.data();
+        window.currentMemberId = memberId;
+
+        const titleEl = document.querySelector('.memberFormTitle');
+        if (titleEl) titleEl.textContent = 'Edit Member';
+
+        // Safe field setting with existence check
+        const setField = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
+        };
+
+        setField('memberName', m.name);
+        setField('memberEmail', m.email);
+        setField('memberPhone1', m.phone);
+        setField('memberPhone2', m.phone2);
+        setField('memberFamilyHead', m.familyHead);
+        setField('memberFamilyNumber', m.familyNumber);
+        setField('memberArea', m.area);
+        setField('memberAddress', m.address);
+        setField('memberDOB', m.dateOfBirth);
+        setField('memberGender', m.gender);
+        setField('memberMaritalStatus', m.maritalStatus);
+        setField('memberSpouseName', m.spouseName);
+        setField('memberChild1', m.child1);
+        setField('memberChild2', m.child2);
+        setField('memberChild3', m.child3);
+        setField('memberChild4', m.child4);
+        setField('memberDateBaptism', m.dateOfBaptism);
+        setField('memberDateConfirmation', m.dateOfConfirmation);
+        setField('memberDateJoining', m.dateOfJoining);
+        setField('memberDateLeaving', m.dateOfLeaving);
+        setField('memberStatus', m.membershipStatus);
+        setField('memberContribution', m.monthlyContribution);
+        setField('memberRemarks', m.remarks);
+
+        // Load profile image
+        memberImageData = m.profileImage || null;
+        const preview = document.getElementById('imagePreview');
+        if (preview) {
+            if (m.profileImage) {
+                preview.style.backgroundImage = 'url(' + m.profileImage + ')';
+                preview.style.backgroundSize = 'cover';
+                preview.style.backgroundPosition = 'center';
+                preview.textContent = '';
+            } else {
+                preview.style.backgroundImage = 'none';
+                preview.textContent = '📷';
+            }
+        }
+        const fileInput = document.getElementById('memberImage');
+        if (fileInput) fileInput.value = '';
+
+        switchMemberTab(0);
+        const modal = document.getElementById('memberModal');
+        if (modal) {
+            modal.classList.add('active');
+            console.log('Member edit modal opened');
+        }
+    } catch(err) {
+        console.error('Error editing member:', err);
+        alert('Error: ' + err.message);
+    }
+}
+
+function closeMemberForm() {
+    const modal = document.getElementById('memberModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function switchMemberTab(index) {
+    const personalInfoSection = document.getElementById('personalInfoSection');
+    const churchFamilySection = document.getElementById('churchFamilySection');
+    const tabs = document.querySelectorAll('.modal-tab');
+
+    if (index === 0) {
+        if (personalInfoSection) personalInfoSection.style.display = 'block';
+        if (churchFamilySection) churchFamilySection.style.display = 'none';
+        if (tabs[0]) tabs[0].classList.add('active');
+        if (tabs[1]) tabs[1].classList.remove('active');
+    } else {
+        if (personalInfoSection) personalInfoSection.style.display = 'none';
+        if (churchFamilySection) churchFamilySection.style.display = 'block';
+        if (tabs[0]) tabs[0].classList.remove('active');
+        if (tabs[1]) tabs[1].classList.add('active');
+    }
+}
+
+// Save Functions
+async function saveEvent() {
+    const name = document.getElementById('eventName').value;
+    const date = document.getElementById('eventDate').value;
+    const location = document.getElementById('eventLocation').value;
+    if (!name || !date) {
+        alert('Name and date required');
+        return;
+    }
+    try {
+        await db.collection('events').add({eventName: name, date: date, location: location, createdAt: new Date()});
+        alert('Event saved!');
+        closeEventForm();
+        document.getElementById('eventName').value = '';
+        document.getElementById('eventDate').value = '';
+        document.getElementById('eventLocation').value = '';
+        loadEvents();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function saveAnnouncement() {
+    const title = document.getElementById('announcementTitle').value;
+    const content = document.getElementById('announcementContent').value;
+    if (!title || !content) {
+        alert('Title and content required');
+        return;
+    }
+    try {
+        await db.collection('announcements').add({title: title, content: content, createdAt: new Date()});
+        alert('Announcement saved!');
+        closeAnnouncementForm();
+        document.getElementById('announcementTitle').value = '';
+        document.getElementById('announcementContent').value = '';
+        loadAnnouncements();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function saveSermon() {
+    const title = document.getElementById('sermonTitle').value;
+    const speaker = document.getElementById('sermonSpeaker').value;
+    const date = document.getElementById('sermonDate').value;
+    const description = document.getElementById('sermonDescription').value;
+    if (!title || !speaker || !date) {
+        alert('Title, speaker, and date required');
+        return;
+    }
+    try {
+        await db.collection('sermons').add({title: title, speaker: speaker, sermonDate: date, description: description, createdAt: new Date()});
+        alert('Sermon saved!');
+        closeSermonForm();
+        document.getElementById('sermonTitle').value = '';
+        document.getElementById('sermonSpeaker').value = '';
+        document.getElementById('sermonDate').value = '';
+        document.getElementById('sermonDescription').value = '';
+        loadSermons();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function savePrayer() {
+    const title = document.getElementById('prayerTitle').value;
+    const content = document.getElementById('prayerContent').value;
+    if (!title || !content) {
+        alert('Title and content required');
+        return;
+    }
+    try {
+        await db.collection('prayers').add({title: title, content: content, createdAt: new Date()});
+        alert('Prayer saved!');
+        closePrayerForm();
+        document.getElementById('prayerTitle').value = '';
+        document.getElementById('prayerContent').value = '';
+        loadPrayers();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function saveMember() {
+    const name = document.getElementById('memberName').value;
+    const email = document.getElementById('memberEmail').value;
+    const phone1 = document.getElementById('memberPhone1').value;
+    const phone2 = document.getElementById('memberPhone2').value;
+
+    if (!name || !email || !phone1) {
+        alert('Please fill in required fields (Name, Email, Phone 1)');
+        return;
+    }
+
+    try {
+        const memberData = {
+            name: name,
+            email: email,
+            phone: phone1,
+            phone2: phone2,
+            familyHead: document.getElementById('memberFamilyHead').value,
+            familyNumber: document.getElementById('memberFamilyNumber').value,
+            area: document.getElementById('memberArea').value,
+            address: document.getElementById('memberAddress').value,
+            dateOfBirth: document.getElementById('memberDOB').value,
+            maritalStatus: document.getElementById('memberMaritalStatus').value,
+            spouseName: document.getElementById('memberSpouseName').value,
+            child1: document.getElementById('memberChild1').value,
+            child2: document.getElementById('memberChild2').value,
+            child3: document.getElementById('memberChild3').value,
+            child4: document.getElementById('memberChild4').value,
+            dateOfBaptism: document.getElementById('memberDateBaptism').value,
+            dateOfConfirmation: document.getElementById('memberDateConfirmation').value,
+            dateOfJoining: document.getElementById('memberDateJoining').value,
+            dateOfLeaving: document.getElementById('memberDateLeaving').value,
+            membershipStatus: document.getElementById('memberStatus').value,
+            monthlyContribution: document.getElementById('memberContribution').value,
+            remarks: document.getElementById('memberRemarks').value,
+            profileImage: memberImageData,
+            updatedAt: new Date()
+        };
+
+        if (window.currentMemberId) {
+            await db.collection('members').doc(window.currentMemberId).update(memberData);
+            alert('Member updated!');
+        } else {
+            memberData.createdAt = new Date();
+            await db.collection('members').add(memberData);
+            alert('Member saved!');
+        }
+
+        closeMemberForm();
+        resetMemberForm();
+        loadMembers();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function resetMemberForm() {
+    document.getElementById('memberName').value = '';
+    document.getElementById('memberEmail').value = '';
+    document.getElementById('memberPhone1').value = '';
+    document.getElementById('memberPhone2').value = '';
+    document.getElementById('memberFamilyHead').value = '';
+    document.getElementById('memberFamilyNumber').value = '';
+    document.getElementById('memberArea').value = '';
+    document.getElementById('memberAddress').value = '';
+    document.getElementById('memberDOB').value = '';
+    document.getElementById('memberMaritalStatus').value = '';
+    document.getElementById('memberSpouseName').value = '';
+    document.getElementById('memberChild1').value = '';
+    document.getElementById('memberChild2').value = '';
+    document.getElementById('memberChild3').value = '';
+    document.getElementById('memberChild4').value = '';
+    document.getElementById('memberDateBaptism').value = '';
+    document.getElementById('memberDateConfirmation').value = '';
+    document.getElementById('memberDateJoining').value = '';
+    document.getElementById('memberDateLeaving').value = '';
+    document.getElementById('memberStatus').value = '';
+    document.getElementById('memberContribution').value = '';
+    document.getElementById('memberRemarks').value = '';
+    memberImageData = null;
+    const preview = document.getElementById('imagePreview');
+    if (preview) {
+        preview.style.backgroundImage = 'none';
+        preview.textContent = '📷';
+    }
+    const fileInput = document.getElementById('memberImage');
+    if (fileInput) fileInput.value = '';
+    switchMemberTab(0);
+}
+
+// Placeholder edit functions for other sections
+function editAnnouncement(id) {
+    alert('Edit announcement: ' + id);
+}
+
+function editEvent(id) {
+    alert('Edit event: ' + id);
+}
+
+function editSermon(id) {
+    alert('Edit sermon: ' + id);
+}
+
+function editPrayer(id) {
+    alert('Edit prayer: ' + id);
+}
+
+// Filter Functions
+function openFilterModal() {
+    const modal = document.getElementById('filterModal');
+    if (modal) modal.classList.add('active');
+    populateAreaOptions();
+}
+
+function populateAreaOptions() {
+    const areas = [...new Set(allMembers.map(m => m.area).filter(a => a))];
+    const areaSelect = document.getElementById('filterArea');
+    if (!areaSelect) return;
+
+    let currentValue = areaSelect.value;
+    areaSelect.innerHTML = '<option value="">Area: All</option>';
+
+    areas.sort().forEach(area => {
+        const option = document.createElement('option');
+        option.value = area;
+        option.textContent = 'Area: ' + area;
+        areaSelect.appendChild(option);
+    });
+
+    areaSelect.value = currentValue;
+}
+
+// Export function
+function exportMembers() {
+    if (allMembers.length === 0) {
+        alert('No members to export');
+        return;
+    }
+
+    let csv = 'Name,Email,Phone,Gender,Status,Area,Date of Birth,Marital Status\n';
+
+    allMembers.forEach(m => {
+        const name = (m.name || '').replace(/"/g, '""');
+        const email = m.email || '';
+        const phone = m.phone || '';
+        const gender = m.gender || '';
+        const status = m.membershipStatus || '';
+        const area = m.area || '';
+        const dob = m.dateOfBirth || '';
+        const marital = m.maritalStatus || '';
+
+        csv += `"${name}","${email}","${phone}","${gender}","${status}","${area}","${dob}","${marital}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'members-' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    alert('Members exported successfully!');
+}
+
+// Report function
+function generateReport() {
+    const totalMembers = allMembers.length;
+    const activeMembers = allMembers.filter(m => m.membershipStatus === 'Active').length;
+    const inactiveMembers = allMembers.filter(m => m.membershipStatus === 'Inactive').length;
+    const maleMembers = allMembers.filter(m => m.gender === 'Male').length;
+    const femaleMembers = allMembers.filter(m => m.gender === 'Female').length;
+    const baptizedMembers = allMembers.filter(m => m.baptismStatus === 'Baptized').length;
+    const married = allMembers.filter(m => m.maritalStatus === 'Married').length;
+    const single = allMembers.filter(m => m.maritalStatus === 'Single').length;
+
+    const reportHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 600px;">
+            <h2 style="text-align: center; color: #3b82f6;">Church Members Report</h2>
+            <p style="text-align: center; color: #666;">Generated on ${new Date().toLocaleDateString()}</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Membership Summary</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div><strong>Total Members:</strong> <span style="font-size: 24px; color: #3b82f6;">${totalMembers}</span></div>
+                    <div><strong>Active:</strong> <span style="font-size: 24px; color: #4CAF50;">${activeMembers}</span></div>
+                    <div><strong>Inactive:</strong> <span style="font-size: 24px; color: #FF9800;">${inactiveMembers}</span></div>
+                    <div><strong>Baptized:</strong> <span style="font-size: 24px; color: #2196F3;">${baptizedMembers}</span></div>
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Demographics</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div><strong>Male:</strong> ${maleMembers}</div>
+                    <div><strong>Female:</strong> ${femaleMembers}</div>
+                    <div><strong>Married:</strong> ${married}</div>
+                    <div><strong>Single:</strong> ${single}</div>
+                </div>
+            </div>
+
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 30px; text-align: center;">
+                <button onclick="window.print()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">Print Report</button>
+                <button onclick="window.close()" style="background: #999; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 10px;">Close</button>
+            </div>
+        </div>
+    `;
+
+    const reportWindow = window.open('', 'Members Report', 'width=700,height=800');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+}
+
+function closeFilterModal() {
+    const modal = document.getElementById('filterModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function filterMembers() {
+    const searchTerm = (document.getElementById('searchMembers')?.value || '').toLowerCase();
+    const statusFilter = document.getElementById('filterStatus')?.value || '';
+    const genderFilter = document.getElementById('filterGender')?.value || '';
+    const areaFilter = document.getElementById('filterArea')?.value || '';
+
+    const filtered = allMembers.filter(member => {
+        const matchesSearch = !searchTerm ||
+            (member.name && member.name.toLowerCase().includes(searchTerm)) ||
+            (member.email && member.email.toLowerCase().includes(searchTerm)) ||
+            (member.phone && member.phone.includes(searchTerm));
+
+        const matchesStatus = !statusFilter || member.membershipStatus === statusFilter;
+        const matchesGender = !genderFilter || member.gender === genderFilter;
+        const matchesArea = !areaFilter || member.area === areaFilter;
+
+        return matchesSearch && matchesStatus && matchesGender && matchesArea;
+    });
+
+    displayMembers(filtered);
+    displayFilteredGallery(filtered);
+}
+
+function displayFilteredGallery(members) {
+    const gallery = document.getElementById('membersGallery');
+    if (!gallery) return;
+
+    if (members.length === 0) {
+        gallery.innerHTML = '<div style="text-align: center; padding: 60px 30px; color: #999; grid-column: 1/-1;">No members match filters</div>';
+        return;
+    }
+
+    let html = '';
+    members.forEach(m => {
+        const initial = (m.name || 'M').charAt(0).toUpperCase();
+        const status = m.membershipStatus || 'Member';
+        const avatarStyle = m.profileImage
+            ? 'background-image: url(' + m.profileImage + '); background-size: cover; background-position: center;'
+            : '';
+        html += '<div class="gallery-card" onclick="editMember(\'' + m.id + '\')">';
+        html += '<div class="gallery-avatar" style="' + avatarStyle + '">' + (m.profileImage ? '' : initial) + '</div>';
+        html += '<div class="gallery-info">';
+        html += '<div class="gallery-name">' + (m.name || 'N/A') + '</div>';
+        html += '<div class="gallery-status">' + status + '</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+    gallery.innerHTML = html;
+}
+
+function updateFilterChips() {
+    const statusFilter = document.getElementById('filterStatus')?.value || '';
+    const genderFilter = document.getElementById('filterGender')?.value || '';
+    const maritalFilter = document.getElementById('filterMarital')?.value || '';
+    const areaFilter = document.getElementById('filterArea')?.value || '';
+    const chipsContainer = document.getElementById('filterChips');
+
+    let chipsHTML = '';
+
+    if (statusFilter) {
+        chipsHTML += '<span style="background: #e8f4f8; color: #3b82f6; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;" onclick="document.getElementById(\'filterStatus\').value=\'\'; filterMembers();">✓ Status: ' + statusFilter + ' <span style="font-weight: bold;">×</span></span>';
+    }
+
+    if (genderFilter) {
+        chipsHTML += '<span style="background: #e8f4f8; color: #3b82f6; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;" onclick="document.getElementById(\'filterGender\').value=\'\'; filterMembers();">✓ Gender: ' + genderFilter + ' <span style="font-weight: bold;">×</span></span>';
+    }
+
+    if (maritalFilter) {
+        chipsHTML += '<span style="background: #e8f4f8; color: #3b82f6; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;" onclick="document.getElementById(\'filterMarital\').value=\'\'; filterMembers();">✓ Marital: ' + maritalFilter + ' <span style="font-weight: bold;">×</span></span>';
+    }
+
+    if (areaFilter) {
+        chipsHTML += '<span style="background: #e8f4f8; color: #3b82f6; padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;" onclick="document.getElementById(\'filterArea\').value=\'\'; filterMembers();">✓ Area: ' + areaFilter + ' <span style="font-weight: bold;">×</span></span>';
+    }
+
+    if (statusFilter || genderFilter || maritalFilter || areaFilter) {
+        chipsHTML += '<button onclick="resetFilters()" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-weight: 600; font-size: 13px; text-decoration: underline;">Clear all</button>';
+    }
+
+    chipsContainer.innerHTML = chipsHTML;
+}
+
+function resetFilters() {
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterGender').value = '';
+    document.getElementById('filterMarital').value = '';
+    document.getElementById('filterArea').value = '';
+    document.getElementById('searchMembers').value = '';
+    displayMembers(allMembers);
+    updateFilterChips();
+}
+
+function resetAllFilters() {
+    document.getElementById('searchMembers').value = '';
+    const statusSelect = document.getElementById('filterStatus');
+    const genderSelect = document.getElementById('filterGender');
+    const areaSelect = document.getElementById('filterArea');
+
+    if (statusSelect) statusSelect.value = '';
+    if (genderSelect) genderSelect.value = '';
+    if (areaSelect) areaSelect.value = '';
+
+    displayMembers(allMembers);
+    displayFilteredGallery(allMembers);
+}
+
+// Image handling functions
+let memberImageData = null;
+let allOfferings = [];
+let currentOfferingId = null;
+
+function previewImage() {
+    const fileInput = document.getElementById('memberImage');
+    const preview = document.getElementById('imagePreview');
+    const file = fileInput.files[0];
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            memberImageData = e.target.result;
+            preview.style.backgroundImage = 'url(' + memberImageData + ')';
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+            preview.textContent = '';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function displayMemberImage(m) {
+    if (m.profileImage) {
+        return '<div style="width: 140px; height: 140px; background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold; overflow: hidden; background-image: url(' + m.profileImage + '); background-size: cover; background-position: center;"></div>';
+    } else {
+        const initial = (m.name || 'M').charAt(0).toUpperCase();
+        return '<div style="width: 140px; height: 140px; background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; font-weight: bold;">' + initial + '</div>';
+    }
+}
+
+// Offering Functions
+async function loadOfferings() {
+    try {
+        console.log('📥 Loading offerings...');
+        const snapshot = await db.collection('offerings').get();
+        allOfferings = [];
+        snapshot.forEach(doc => {
+            allOfferings.push({id: doc.id, ...doc.data()});
+        });
+        displayOfferings(allOfferings);
+        populateMemberDropdown();
+        console.log('✅ Offerings loaded:', allOfferings.length);
+    } catch(err) {
+        console.error('❌ Error:', err);
+        const tbody = document.getElementById('offeringsTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color: #f44336;">❌ Error: ' + err.message + '</td></tr>';
+    }
+}
+
+function displayOfferings(offerings) {
+    const tbody = document.getElementById('offeringsTable');
+    if (offerings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No offerings recorded</td></tr>';
+        return;
+    }
+    let html = '';
+    offerings.forEach(o => {
+        const date = o.date ? new Date(o.date).toLocaleDateString() : '-';
+        const amount = o.amount ? '$' + parseFloat(o.amount).toFixed(2) : '-';
+        const notes = o.notes ? (o.notes.length > 30 ? o.notes.substring(0, 30) + '...' : o.notes) : '-';
+
+        html += '<tr>';
+        html += '<td>' + (o.memberName || 'Anonymous') + '</td>';
+        html += '<td><strong>' + amount + '</strong></td>';
+        html += '<td>' + date + '</td>';
+        html += '<td><span class="status-badge">' + (o.type || 'General') + '</span></td>';
+        html += '<td>' + notes + '</td>';
+        html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px; margin-right: 8px;" onclick="editOffering(\'' + o.id + '\')">✏️</button><button style="background: none; border: none; cursor: pointer; font-size: 18px; color: #ff6b6b;" onclick="deleteOffering(\'' + o.id + '\')">🗑️</button></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function populateMemberDropdown() {
+    const select = document.getElementById('offeringMember');
+    if (!select) return;
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Select Member (or Anonymous)</option>';
+    allMembers.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.name;
+        option.textContent = m.name;
+        select.appendChild(option);
+    });
+    select.value = currentValue;
+}
+
+function openOfferingForm() {
+    currentOfferingId = null;
+    const titleEl = document.querySelector('.offeringFormTitle');
+    if (titleEl) titleEl.textContent = 'Add Offering';
+    resetOfferingForm();
+    const modal = document.getElementById('offeringModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeOfferingForm() {
+    const modal = document.getElementById('offeringModal');
+    if (modal) modal.classList.remove('active');
+}
+
+async function editOffering(id) {
+    try {
+        const doc = await db.collection('offerings').doc(id).get();
+        if (!doc.exists) {
+            alert('Offering not found');
+            return;
+        }
+        const o = doc.data();
+        currentOfferingId = id;
+        document.querySelector('.offeringFormTitle').textContent = 'Edit Offering';
+        document.getElementById('offeringMember').value = o.memberName || '';
+        document.getElementById('offeringAmount').value = o.amount || '';
+        document.getElementById('offeringDate').value = o.date || '';
+        document.getElementById('offeringType').value = o.type || '';
+        document.getElementById('offeringNotes').value = o.notes || '';
+        const modal = document.getElementById('offeringModal');
+        if (modal) modal.classList.add('active');
+    } catch(err) {
+        console.error('Error:', err);
+        alert('Error: ' + err.message);
+    }
+}
+
+async function saveOffering() {
+    const memberName = document.getElementById('offeringMember').value || 'Anonymous';
+    const amount = document.getElementById('offeringAmount').value;
+    const date = document.getElementById('offeringDate').value;
+    const type = document.getElementById('offeringType').value;
+    const notes = document.getElementById('offeringNotes').value;
+
+    if (!amount || !date || !type) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const offeringData = {
+            memberName: memberName,
+            amount: parseFloat(amount),
+            date: date,
+            type: type,
+            notes: notes,
+            updatedAt: new Date()
+        };
+
+        if (currentOfferingId) {
+            await db.collection('offerings').doc(currentOfferingId).update(offeringData);
+            alert('Offering updated!');
+        } else {
+            offeringData.createdAt = new Date();
+            await db.collection('offerings').add(offeringData);
+            alert('Offering saved!');
+        }
+
+        closeOfferingForm();
+        resetOfferingForm();
+        loadOfferings();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function deleteOffering(id) {
+    if (!confirm('Delete this offering?')) return;
+    try {
+        await db.collection('offerings').doc(id).delete();
+        alert('Offering deleted!');
+        loadOfferings();
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function resetOfferingForm() {
+    document.getElementById('offeringMember').value = '';
+    document.getElementById('offeringAmount').value = '';
+    document.getElementById('offeringDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('offeringType').value = '';
+    document.getElementById('offeringNotes').value = '';
+}
+
+function filterOfferings() {
+    const search = (document.getElementById('searchOfferings')?.value || '').toLowerCase();
+    const filtered = allOfferings.filter(o => {
+        return !search ||
+            (o.memberName && o.memberName.toLowerCase().includes(search)) ||
+            (o.type && o.type.toLowerCase().includes(search));
+    });
+    displayOfferings(filtered);
+}

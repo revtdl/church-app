@@ -1,0 +1,28 @@
+﻿# Folders to ignore
+node_modules/
+.git/
+.github/
+.vscode/
+android/
+ios/
+
+# Files to ignore
+package-lock.json
+yarn.lock
+firebase-debug.log
+.env
+.env.local
+.DS_Store
+Thumbs.db
+README.md
+.gitignore
+*.log
+
+# Executable files
+*.exe
+*.dll
+*.so
+*.dylib
+*.bat
+*.cmd
+*.sh

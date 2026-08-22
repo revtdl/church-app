@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .login-container h1 { margin-bottom: 20px; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background: #3a6c6e; }
+        .demo-btn { background: #999; margin-top: 10px; }
+
+        .main-container {
+            display: none;
+            flex-direction: row;
+            height: 100vh;
+            background: white;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(135deg, #3b82f6 0%, #3a6c6e 100%);
+            color: white;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-menu {
+            padding: 0 15px;
+        }
+
+        .sidebar-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .sidebar-item:hover { background: rgba(255,255,255,0.1); }
+        .sidebar-item.active { background: rgba(255,255,255,0.2); }
+
+        .sidebar-section {
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.6);
+            font-weight: bold;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: white;
+            border-bottom: 1px solid #eee;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 30px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover { color: #333; }
+        .tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .filter-btn {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 300px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover { background: #3a6c6e; }
+
+        .btn-menu {
+            background: #999;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        table th {
+            background: #f8f8f8;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+        }
+
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #333;
+        }
+
+        table tr:hover { background: #f9f9f9; }
+
+        .name-link {
+            color: #e74c3c;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .name-link:hover { text-decoration: underline; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #e8f4f8;
+            color: #3b82f6;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h2 { margin: 0; font-size: 20px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            padding: 0 20px;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 15px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .modal-tab:hover { color: #333; }
+        .modal-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+        .modal-body { padding: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; font-size: 13px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-footer button { flex: 1; }
+
+        .gallery-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .gallery-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .gallery-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .gallery-avatar {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .gallery-info {
+            padding: 12px;
+        }
+
+        .gallery-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .gallery-status {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .tab-switcher {
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .view-tab {
+            padding: 12px 0;
+            cursor: pointer;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .view-tab:hover { color: #333; }
+        .view-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+        .list-view, .gallery-view-container {
+            display: none;
+        }
+
+        .list-view.active, .gallery-view-container.active {
+            display: block;
+        }
+
+        .members-wrapper {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 280px);
+        }
+
+        .members-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .members-table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .side-filter-panel {
+            width: 280px;
+            background: white;
+            border-left: 1px solid #eee;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .clear-filters-btn {
+            width: 100%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        .clear-filters-btn:hover {
+            background: #3a6c6e;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table th {
+            background: #f8f8f8;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+        }
+
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .name-link {
+            color: #0066cc;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .name-link:hover {
+            text-decoration: underline;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e8f4f8;
+            color: #3b82f6;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .member-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div class="login-container" id="loginSection">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 48px; margin-bottom: 15px;">⛪</div>
+            <h1 style="margin: 0; color: #333; font-size: 24px;">Church Admin</h1>
+            <p style="color: #999; font-size: 14px; margin-top: 5px;">Whitefield Methodist Church</p>
+        </div>
+
+        <form onsubmit="handleAdminLogin(event)">
+            <div class="form-group">
+                <label>Admin Email</label>
+                <input type="email" id="adminEmail" placeholder="admin@church.com" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="adminPassword" placeholder="Enter password" required>
+            </div>
+            <button type="submit">Login to Dashboard</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #999; font-size: 12px; margin-bottom: 15px;">OR</p>
+            <button type="button" class="demo-btn" onclick="demoLogin()" style="width: 100%;">🧪 Demo Access (Test Only)</button>
+        </div>
+
+        <div id="loginError" style="color: #f44336; text-align: center; margin-top: 15px; font-size: 12px; display: none;"></div>
+
+        <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>📝 Test Credentials:</strong>
+            <div style="margin-top: 8px;">Email: <code style="background: white; padding: 2px 4px;">admin@church.com</code></div>
+            <div>Password: <code style="background: white; padding: 2px 4px;">admin123</code></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="main-container" id="mainContainer">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">⛪ Whitefield Methodist Church</div>
+
+            <div class="sidebar-menu">
+                <div class="sidebar-item active" onclick="switchMenu('members')">👥 Members</div>
+                <div class="sidebar-item" onclick="switchMenu('announcements')">📢 Announcements</div>
+                <div class="sidebar-item" onclick="switchMenu('events')">📅 Events</div>
+                <div class="sidebar-item" onclick="switchMenu('sermons')">🎤 Sermons</div>
+                <div class="sidebar-item" onclick="switchMenu('prayers')">🙏 Prayers</div>
+                <div class="sidebar-item" onclick="switchMenu('offerings')">💝 Offerings</div>
+                <div class="sidebar-item" onclick="logout()" style="color: #ff6b6b; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">🚪 Logout</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Header -->
+            <div class="header">
+                <div class="search-bar">
+                    <span>🔍</span>
+                    <input type="text" id="headerSearch" placeholder="Search people...">
+                </div>
+                <div class="user-profile">
+                    <div style="text-align: right; font-size: 14px;">
+                        <div style="font-weight: 600; color: #333;" id="currentAdminName">Admin User</div>
+                        <div style="color: #666; font-size: 12px;">Logged in as Admin</div>
+                    </div>
+                    <div class="user-avatar" id="userInitial">A</div>
+                    <button onclick="logoutAdmin()" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; margin-left: 12px;">🚪 Logout</button>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="main-content">
+                <!-- Members Section (Simplified) -->
+                <div id="members" class="section active">
+                    <div class="page-header">
+                        <div class="page-title">👥 Members</div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <!-- Row 1: Search & Action Buttons -->
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                            <input type="text" id="searchMembers" placeholder="🔍 Search name or email..." onkeyup="filterMembers()" style="flex: 1; min-width: 220px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+                            <button class="btn-primary" onclick="openMemberForm()" style="padding: 10px 16px; font-size: 13px; white-space: nowrap;">+ Add Member</button>
+                            <button class="btn-primary" onclick="exportMembers()" style="padding: 10px 16px; font-size: 13px; background: #10b981; white-space: nowrap;">📥 Export</button>
+                        </div>
+
+                        <!-- Row 2: Filter Dropdowns -->
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <label style="font-weight: 600; color: #333; font-size: 13px;">Filters:</label>
+
+                            <select id="filterStatus" onchange="filterMembers()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white; cursor: pointer;">
+                                <option value="">Status: All</option>
+                                <option value="Active">Status: Active</option>
+                                <option value="Inactive">Status: Inactive</option>
+                                <option value="Associate">Status: Associate</option>
+                                <option value="Member">Status: Member</option>
+                            </select>
+
+                            <select id="filterGender" onchange="filterMembers()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white; cursor: pointer;">
+                                <option value="">Gender: All</option>
+                                <option value="Male">Gender: Male</option>
+                                <option value="Female">Gender: Female</option>
+                            </select>
+
+                            <select id="filterArea" onchange="filterMembers()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white; cursor: pointer;">
+                                <option value="">Area: All</option>
+                            </select>
+
+                            <button onclick="resetAllFilters()" style="background: #f87171; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap;">✕ Clear All</button>
+                        </div>
+                    </div>
+
+                    <!-- View Tabs -->
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 0;">
+                        <button class="view-tab active" onclick="switchMemberView('list')" style="padding: 12px 0; border: none; background: none; color: #333; font-weight: 600; border-bottom: 3px solid #3b82f6; cursor: pointer;">📋 List</button>
+                        <button class="view-tab" onclick="switchMemberView('gallery')" style="padding: 12px 0; border: none; background: none; color: #999; font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">🖼️ Gallery</button>
+                    </div>
+
+                    <!-- List View -->
+                    <div class="list-view active" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+                        <table>
+                            <thead>
+                                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Name</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Email</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Phone</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Status</th>
+                                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #333;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="membersTable">
+                                <tr><td colspan="5" style="text-align: center; padding: 30px; color: #999;">Loading members...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Gallery View -->
+                    <div class="gallery-view-container" style="display: none;">
+                        <div class="gallery-view" id="membersGallery">
+                            <div style="text-align: center; padding: 60px 30px; color: #999;">Loading gallery...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Announcements Section -->
+                <div id="announcements" class="section">
+                    <div class="page-header">
+                        <div class="page-title">Announcements</div>
+                        <div class="controls">
+                            <button class="filter-btn">Filter ⏬</button>
+                            <input type="text" class="search-input" placeholder="Search...">
+                            <div class="action-buttons">
+                                <button class="btn-primary" onclick="openAnnouncementForm()">+ Add Announcement</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>Title</th><th>Content</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="announcementsTable">
+                            <tr><td colspan="3" style="text-align: center; padding: 30px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Events Section -->
+                <div id="events" class="section">
+                    <div class="page-header">
+                        <div class="page-title">Events</div>
+                        <div class="controls">
+                            <button class="filter-btn">Filter ⏬</button>
+                            <input type="text" class="search-input" placeholder="Search...">
+                            <div class="action-buttons">
+                                <button class="btn-primary" onclick="openEventForm()">+ Add Event</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>Name</th><th>Date</th><th>Location</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="eventsTable">
+                            <tr><td colspan="4" style="text-align: center; padding: 30px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sermons Section -->
+                <div id="sermons" class="section">
+                    <div class="page-header">
+                        <div class="page-title">Sermons</div>
+                        <div class="controls">
+                            <button class="filter-btn">Filter ⏬</button>
+                            <input type="text" class="search-input" placeholder="Search...">
+                            <div class="action-buttons">
+                                <button class="btn-primary" onclick="openSermonForm()">+ Add Sermon</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>Title</th><th>Speaker</th><th>Date</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="sermonsTable">
+                            <tr><td colspan="4" style="text-align: center; padding: 30px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Prayers Section -->
+                <div id="prayers" class="section">
+                    <div class="page-header">
+                        <div class="page-title">Prayers</div>
+                        <div class="controls">
+                            <button class="filter-btn">Filter ⏬</button>
+                            <input type="text" class="search-input" placeholder="Search...">
+                            <div class="action-buttons">
+                                <button class="btn-primary" onclick="openPrayerForm()">+ Add Prayer</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>Title</th><th>Content</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="prayersTable">
+                            <tr><td colspan="3" style="text-align: center; padding: 30px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Offerings Section -->
+                <div id="offerings" class="section">
+                    <div class="page-header">
+                        <div class="page-title">Offerings</div>
+                        <div class="controls" style="display: flex; gap: 15px; align-items: center;">
+                            <input type="text" class="search-input" id="searchOfferings" placeholder="Search offerings..." onkeyup="filterOfferings()" style="flex: 1; max-width: 300px; padding: 8px 12px; font-size: 13px;">
+                            <button class="btn-primary" onclick="openOfferingForm()">+ Add Offering</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Member Name</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Notes</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="offeringsTable">
+                            <tr><td colspan="6" style="text-align: center; padding: 30px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offering Modal -->
+    <div id="offeringModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="offeringFormTitle">Add Offering</h2>
+                <button class="modal-close" onclick="closeOfferingForm()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Member Name *</label>
+                    <select id="offeringMember" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14;">
+                        <option value="">Select Member</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount *</label>
+                    <input type="number" id="offeringAmount" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Date *</label>
+                    <input type="date" id="offeringDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Type *</label>
+                    <select id="offeringType" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14;">
+                        <option value="">Select Type</option>
+                        <option value="General">General Offering</option>
+                        <option value="Tithe">Tithe</option>
+                        <option value="Special">Special Offering</option>
+                        <option value="Building">Building Fund</option>
+                        <option value="Missions">Missions</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="offeringNotes" placeholder="Additional notes..." style="min-height: 80px;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveOffering()" class="btn-primary">Save Offering</button>
+                <button onclick="closeOfferingForm()" style="background: #999;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div id="filterModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 style="margin: 0;">Filter Members</h2>
+                <button class="modal-close" onclick="closeFilterModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Membership Status</label>
+                    <select id="filterStatus" onchange="filterMembers()">
+                        <option value="">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Associate">Associate</option>
+                        <option value="Member">Member</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select id="filterGender" onchange="filterMembers()">
+                        <option value="">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Marital Status</label>
+                    <select id="filterMarital" onchange="filterMembers()">
+                        <option value="">All</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Area</label>
+                    <select id="filterArea" onchange="filterMembers()">
+                        <option value="">All Areas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="resetFilters()" style="background: #999;">Reset</button>
+                <button onclick="closeFilterModal()" class="btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Modal -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="memberFormTitle">Add Member</h2>
+                <button class="modal-close" onclick="closeMemberForm()">×</button>
+            </div>
+
+            <div class="modal-tabs">
+                <div class="modal-tab active" onclick="switchMemberTab(0)">Personal Info</div>
+                <div class="modal-tab" onclick="switchMemberTab(1)">Church & Family</div>
+            </div>
+
+            <div class="modal-body">
+                <div id="personalInfoSection" style="display: block;">
+                    <div class="form-group">
+                        <label>Profile Photo</label>
+                        <div style="display: flex; gap: 15px; align-items: flex-start;">
+                            <div style="width: 80px; height: 80px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold; overflow: hidden;" id="imagePreview">📷</div>
+                            <div style="flex: 1;">
+                                <input type="file" id="memberImage" accept="image/*" onchange="previewImage()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="font-size: 12px; color: #666; margin-top: 5px;">Upload a photo to display in gallery</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Full Name *</label><input type="text" id="memberName" placeholder="Full Name"></div>
+                    <div class="form-group"><label>Family Head</label><input type="text" id="memberFamilyHead"></div>
+                    <div class="form-group"><label>Family Number</label><input type="text" id="memberFamilyNumber"></div>
+                    <div class="form-group"><label>Phone 1 (Primary) *</label><input type="tel" id="memberPhone1"></div>
+                    <div class="form-group"><label>Phone 2 (Optional)</label><input type="tel" id="memberPhone2"></div>
+                    <div class="form-group"><label>Email *</label><input type="email" id="memberEmail"></div>
+                    <div class="form-group"><label>Area *</label><input type="text" id="memberArea"></div>
+                    <div class="form-group"><label>Address *</label><input type="text" id="memberAddress"></div>
+                    <div class="form-group"><label>Date of Birth</label><input type="text" id="memberDOB" placeholder="DD/MM/YYYY"></div>
+                    <div class="form-group"><label>Gender</label><select id="memberGender"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                    <div class="form-group"><label>Marital Status</label><select id="memberMaritalStatus"><option value="">Select</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option></select></div>
+                    <div class="form-group"><label>Spouse Name</label><input type="text" id="memberSpouseName"></div>
+                    <div class="form-group"><label>Child 1</label><input type="text" id="memberChild1"></div>
+                    <div class="form-group"><label>Child 2</label><input type="text" id="memberChild2"></div>
+                    <div class="form-group"><label>Child 3</label><input type="text" id="memberChild3"></div>
+                    <div class="form-group"><label>Child 4</label><input type="text" id="memberChild4"></div>
+                </div>
+
+                <div id="churchFamilySection" style="display: none;">
+                    <div class="form-group"><label>Date of Baptism</label><input type="text" id="memberDateBaptism" placeholder="DD/MM/YYYY"></div>
+                    <div class="form-group"><label>Date of Confirmation</label><input type="text" id="memberDateConfirmation" placeholder="DD/MM/YYYY"></div>
+                    <div class="form-group"><label>Date of Joining Church</label><input type="text" id="memberDateJoining" placeholder="DD/MM/YYYY"></div>
+                    <div class="form-group"><label>Date of Leaving Church</label><input type="text" id="memberDateLeaving" placeholder="DD/MM/YYYY"></div>
+                    <div class="form-group"><label>Membership Status</label><select id="memberStatus"><option value="">Select</option><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Associate">Associate</option><option value="Member">Member</option></select></div>
+                    <div class="form-group"><label>Monthly Contribution</label><input type="text" id="memberContribution"></div>
+                    <div class="form-group"><label>Remarks</label><textarea id="memberRemarks" style="min-height: 80px;"></textarea></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="saveMember()" class="btn-primary">Save Member</button>
+                <button onclick="closeMemberForm()" style="background: #999;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/admin-app.js"></script>
+    <script>
+        function switchMenu(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(section).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data for each section
+            if (section === 'members') loadMembers();
+            else if (section === 'announcements') loadAnnouncements();
+            else if (section === 'events') loadEvents();
+            else if (section === 'sermons') loadSermons();
+            else if (section === 'prayers') loadPrayers();
+            else if (section === 'offerings') loadOfferings();
+        }
+
+        // Offerings will be loaded by loadOfferings() from admin-app.js
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('offeringDate');
+            if (dateInput) dateInput.value = today;
+        });
+    </script>
+</body>
+</html>

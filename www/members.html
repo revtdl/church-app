@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .container { display: flex; height: 100vh; }
+
+        .sidebar {
+            width: 80px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .sidebar-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 28px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-icon:hover { background: #4a7c7e; }
+        .sidebar-icon.active { background: #4a7c7e; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title { font-size: 28px; font-weight: bold; color: #333; }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            border-radius: 4px;
+            width: 250px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .btn-add { background: #1a1a1a; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn-add:hover { background: #333; }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .stats-and-table {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .stat-title { font-size: 14px; font-weight: 600; color: #666; margin-bottom: 15px; }
+
+        .stat-chart { height: 120px; }
+
+        .members-table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background: #f8f8f8;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+        }
+
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        table tr:hover { background: #f9f9f9; }
+
+        .member-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a7c7e 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .member-name { color: #0066cc; font-weight: 600; cursor: pointer; }
+        .member-name:hover { text-decoration: underline; }
+
+        .filter-panel {
+            width: 280px;
+            background: white;
+            padding: 20px;
+            border-left: 1px solid #eee;
+            overflow-y: auto;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-header h3 { font-size: 14px; font-weight: 600; }
+
+        .btn-clear { background: #1a1a1a; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+        .filter-group { margin-bottom: 20px; }
+
+        .filter-label { font-size: 12px; font-weight: 600; color: #666; margin-bottom: 8px; display: block; }
+
+        .filter-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e8f4f8;
+            color: #4a7c7e;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .image-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-2px); }
+
+        .image-placeholder {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, #4a7c7e 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .image-info {
+            padding: 12px;
+        }
+
+        .image-name { font-weight: 600; font-size: 13px; color: #333; margin-bottom: 4px; }
+        .image-status { font-size: 11px; color: #666; }
+
+        .no-images {
+            text-align: center;
+            padding: 60px 30px;
+            color: #999;
+        }
+
+        @media (max-width: 1400px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .filter-panel { display: none; }
+            .content-area { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-icon active" id="sidebarList" onclick="switchSidebarView('list')" title="List View">👥</div>
+            <div class="sidebar-icon" id="sidebarStats" onclick="switchSidebarView('stats')" title="Statistics">📊</div>
+            <div class="sidebar-icon" id="sidebarImages" onclick="switchSidebarView('images')" title="Image Gallery">🖼️</div>
+            <div class="sidebar-icon" id="sidebarSettings" onclick="switchSidebarView('settings')" title="Settings">⚙️</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div style="display: flex; gap: 30px; align-items: center;">
+                    <h1 class="header-title">Members</h1>
+                    <div style="display: flex; gap: 20px; border-bottom: 2px solid transparent;">
+                        <button id="tabList" onclick="switchTab('list')" style="background: none; border: none; padding: 8px 0; font-size: 14px; font-weight: 600; color: #333; border-bottom: 3px solid #4a7c7e; cursor: pointer;">List View</button>
+                        <button id="tabImages" onclick="switchTab('images')" style="background: none; border: none; padding: 8px 0; font-size: 14px; font-weight: 600; color: #999; border-bottom: 3px solid transparent; cursor: pointer;">Image Gallery</button>
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <button class="btn-add" onclick="openAddMember()">Add Member +</button>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search members..." onkeyup="searchMembers()">
+                        <span>🔍</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- List View Tab -->
+                <div id="listViewContent" class="tab-content active" style="flex: 1; overflow-y: auto;">
+                    <div class="stats-and-table">
+                        <!-- Statistics Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-title">Membership</div>
+                                <div class="stat-chart">
+                                    <canvas id="membershipChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-title">Baptisms</div>
+                                <div class="stat-chart">
+                                    <canvas id="baptismChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-title">Marriages</div>
+                                <div class="stat-chart">
+                                    <canvas id="marriageChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Members Table -->
+                        <div class="members-table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Area</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="membersTableBody">
+                                    <tr><td colspan="6" style="text-align: center; padding: 30px;">Loading members...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Gallery Tab -->
+                <div id="imageViewContent" class="tab-content" style="flex: 1; overflow-y: auto; background: #f5f5f5;">
+                    <div class="image-gallery" id="imageGallery">
+                        <div class="no-images">Loading images...</div>
+                    </div>
+                </div>
+
+                <!-- Filter Panel -->
+                <div class="filter-panel">
+                    <div class="filter-header">
+                        <h3>Filter</h3>
+                        <button class="btn-clear" onclick="clearAllFilters()">Clear</button>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Membership Type</label>
+                        <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+                            <option value="">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Associate">Associate</option>
+                            <option value="Member">Member</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Gender</label>
+                        <select class="filter-select" id="filterGender" onchange="applyFilters()">
+                            <option value="">All</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Baptism</label>
+                        <select class="filter-select" id="filterBaptism" onchange="applyFilters()">
+                            <option value="">All</option>
+                            <option value="Baptized">Baptized</option>
+                            <option value="Not Baptized">Not Baptized</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Marriage</label>
+                        <select class="filter-select" id="filterMarriage" onchange="applyFilters()">
+                            <option value="">All</option>
+                            <option value="Married">Married</option>
+                            <option value="Single">Single</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Area</label>
+                        <select class="filter-select" id="filterArea" onchange="applyFilters()">
+                            <option value="">All Areas</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Occupation</label>
+                        <select class="filter-select" id="filterOccupation" onchange="applyFilters()">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script>
+        let allMembers = [];
+        let memberCount = 0;
+
+        // Initialize charts
+        function initializeCharts() {
+            const membershipCtx = document.getElementById('membershipChart').getContext('2d');
+            new Chart(membershipCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Members', 'Fellowship', 'Associates', 'Non-members'],
+                    datasets: [{
+                        data: [150, 24, 12, 12],
+                        backgroundColor: ['#1abc9c', '#f39c12', '#e74c3c', '#bdc3c7']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+            });
+
+            const baptismCtx = document.getElementById('baptismChart').getContext('2d');
+            new Chart(baptismCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Baptised', 'Non-baptised'],
+                    datasets: [{
+                        data: [128, 24],
+                        backgroundColor: ['#1abc9c', '#95a5a6']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+            });
+
+            const marriageCtx = document.getElementById('marriageChart').getContext('2d');
+            new Chart(marriageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Baptised', 'Non-baptised'],
+                    datasets: [{
+                        data: [128, 24],
+                        backgroundColor: ['#f39c12', '#95a5a6']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+            });
+        }
+
+        // Load members
+        async function loadMembers() {
+            try {
+                const snapshot = await db.collection('members').get();
+                allMembers = [];
+                snapshot.forEach(doc => {
+                    allMembers.push({ id: doc.id, ...doc.data() });
+                });
+                displayMembers(allMembers);
+                populateAreaOptions();
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('membersTableBody').innerHTML = '<tr><td colspan="6">Error loading members</td></tr>';
+            }
+        }
+
+        function displayMembers(members) {
+            const tbody = document.getElementById('membersTableBody');
+            if (members.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No members found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            members.forEach((m, index) => {
+                const initial = (m.name || 'M').charAt(0).toUpperCase();
+                html += '<tr>';
+                html += '<td>' + (index + 1) + '</td>';
+                html += '<td><div style="display: flex; align-items: center; gap: 10px;"><div class="member-avatar">' + initial + '</div><span class="member-name" onclick="editMember(\'' + m.id + '\')">' + (m.name || 'N/A') + '</span></div></td>';
+                html += '<td>' + (m.email || '-') + '</td>';
+                html += '<td>' + (m.phone || '-') + '</td>';
+                html += '<td><span class="badge">' + (m.membershipStatus || 'Member') + '</span></td>';
+                html += '<td>' + (m.area || '-') + '</td>';
+                html += '</tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        function populateAreaOptions() {
+            const areas = [...new Set(allMembers.map(m => m.area).filter(a => a))];
+            const select = document.getElementById('filterArea');
+            select.innerHTML = '<option value="">All Areas</option>';
+            areas.sort().forEach(area => {
+                select.innerHTML += '<option value="' + area + '">' + area + '</option>';
+            });
+        }
+
+        function applyFilters() {
+            const search = (document.getElementById('searchInput').value || '').toLowerCase();
+            const status = document.getElementById('filterStatus').value || '';
+            const gender = document.getElementById('filterGender').value || '';
+            const baptism = document.getElementById('filterBaptism').value || '';
+            const marriage = document.getElementById('filterMarriage').value || '';
+            const area = document.getElementById('filterArea').value || '';
+
+            const filtered = allMembers.filter(m => {
+                const matchSearch = !search || (m.name && m.name.toLowerCase().includes(search)) || (m.email && m.email.toLowerCase().includes(search));
+                const matchStatus = !status || m.membershipStatus === status;
+                const matchGender = !gender || m.gender === gender;
+                const matchBaptism = !baptism || m.baptismStatus === baptism;
+                const matchMarriage = !marriage || m.maritalStatus === marriage;
+                const matchArea = !area || m.area === area;
+
+                return matchSearch && matchStatus && matchGender && matchBaptism && matchMarriage && matchArea;
+            });
+
+            displayMembers(filtered);
+        }
+
+        function searchMembers() {
+            applyFilters();
+        }
+
+        function clearAllFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterGender').value = '';
+            document.getElementById('filterBaptism').value = '';
+            document.getElementById('filterMarriage').value = '';
+            document.getElementById('filterArea').value = '';
+            document.getElementById('searchInput').value = '';
+            displayMembers(allMembers);
+        }
+
+        function openAddMember() {
+            alert('Add member form opening...');
+        }
+
+        function editMember(id) {
+            alert('Edit member: ' + id);
+        }
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.getElementById('tabList').style.borderBottomColor = tab === 'list' ? '#4a7c7e' : 'transparent';
+            document.getElementById('tabList').style.color = tab === 'list' ? '#333' : '#999';
+            document.getElementById('tabImages').style.borderBottomColor = tab === 'images' ? '#4a7c7e' : 'transparent';
+            document.getElementById('tabImages').style.color = tab === 'images' ? '#333' : '#999';
+
+            // Update content visibility
+            document.getElementById('listViewContent').classList.toggle('active', tab === 'list');
+            document.getElementById('imageViewContent').classList.toggle('active', tab === 'images');
+
+            // Load images if switching to image tab
+            if (tab === 'images') {
+                displayImageGallery();
+            }
+        }
+
+        function switchSidebarView(view) {
+            // Update sidebar icons
+            document.getElementById('sidebarList').classList.toggle('active', view === 'list');
+            document.getElementById('sidebarStats').classList.toggle('active', view === 'stats');
+            document.getElementById('sidebarImages').classList.toggle('active', view === 'images');
+            document.getElementById('sidebarSettings').classList.toggle('active', view === 'settings');
+
+            // Update content visibility
+            document.getElementById('listViewContent').classList.toggle('active', view === 'list');
+            document.getElementById('imageViewContent').classList.toggle('active', view === 'images');
+            document.getElementById('statsViewContent')?.classList.toggle('active', view === 'stats');
+            document.getElementById('settingsViewContent')?.classList.toggle('active', view === 'settings');
+
+            if (view === 'images') {
+                displayImageGallery();
+            }
+        }
+
+        function displayImageGallery() {
+            const gallery = document.getElementById('imageGallery');
+            if (allMembers.length === 0) {
+                gallery.innerHTML = '<div class="no-images">No members to display</div>';
+                return;
+            }
+
+            let html = '';
+            allMembers.forEach(m => {
+                const initial = (m.name || 'M').charAt(0).toUpperCase();
+                html += '<div class="image-card" onclick="editMember(\'' + m.id + '\')">';
+                html += '<div class="image-placeholder">' + initial + '</div>';
+                html += '<div class="image-info">';
+                html += '<div class="image-name">' + (m.name || 'N/A') + '</div>';
+                html += '<div class="image-status">' + (m.membershipStatus || 'Member') + '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+            gallery.innerHTML = html;
+        }
+
+        // Initialize
+        firebase.auth().signInAnonymously().catch(err => console.error('Auth error:', err));
+        setTimeout(() => {
+            loadMembers();
+            initializeCharts();
+        }, 500);
+    </script>
+</body>
+</html>

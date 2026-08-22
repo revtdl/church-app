@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitefield Methodist Church</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Mobile Login Screen -->
+    <div id="loginScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+        <div style="text-align: center; width: 100%; padding: 40px 30px;">
+            <div style="font-size: 72px; margin-bottom: 20px;">⛪</div>
+            <h1 style="margin: 0; font-size: 28px; margin-bottom: 10px;">Whitefield Methodist Church</h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Please login</p>
+
+            <div style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Phone Number</label>
+                    <input type="tel" id="memberPhone" placeholder="Enter your phone" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px;" onkeyup="this.style.borderColor = 'rgba(255,255,255,0.3)'">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Password</label>
+                    <input type="password" id="memberPassword" placeholder="Enter password" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px;" onkeyup="this.style.borderColor = 'rgba(255,255,255,0.3)'">
+                </div>
+
+                <button onclick="handleMobileLogin()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Login</button>
+
+                <button onclick="guestLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Continue as Guest</button>
+            </div>
+
+            <div id="mobileLoginError" style="color: #ff6b6b; margin-top: 15px; font-size: 12px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden until login) -->
+    <div id="appContainer" class="container" style="display: none;">
+        <!-- Header -->
+        <div class="header">
+            <span onclick="showMemberMenu()">☰</span>
+            <span class="header-title">Whitefield Methodist Church</span>
+            <span onclick="logoutMember()">🚪</span>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Home Screen -->
+            <div id="home" class="screen active">
+                <div class="section-title">Home</div>
+                <div style="width: 100%; height: 280px; background: linear-gradient(135deg, #00BCD4 0%, #2196F3 50%, #1565C0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 72px; margin-bottom: 16px;">⛪</div>
+
+                <div class="verse-card">
+                    <div class="verse-label">VERSE OF THE DAY</div>
+                    <div class="verse-text" id="verseText">"For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."</div>
+                    <div class="verse-ref" id="verseRef">John 3:16</div>
+                </div>
+            </div>
+
+            <!-- Featured/Menu Screen -->
+            <div id="featured" class="screen">
+                <div class="section-title">Menu</div>
+
+                <!-- From the Pastor Card -->
+                <div onclick="showScreen('announcements')" style="background: white; border: 2px solid #2196F3; border-radius: 12px; padding: 12px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; overflow: hidden;">
+                    <img src="pastor.jpg" alt="Pastor" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0;">
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">From the Pastor</div></div>
+                </div>
+
+                <!-- Events Card -->
+                <div onclick="showScreen('events')" style="background: white; border: 2px solid #9C27B0; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">📅</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Events</div></div>
+                </div>
+
+                <!-- Sermons Card -->
+                <div onclick="showScreen('sermons')" style="background: white; border: 2px solid #FFA500; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">🎤</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Sermons</div></div>
+                </div>
+
+                <!-- Prayers Card -->
+                <div onclick="showScreen('prayers')" style="background: white; border: 2px solid #F44336; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">❤️</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
+                </div>
+
+                <!-- Offering Button -->
+                <div onclick="showScreen('offering')" style="background: #4CAF50; color: white; border-radius: 12px; padding: 16px; text-align: center; font-weight: bold; cursor: pointer; font-size: 16px;">💰 OFFERING</div>
+            </div>
+
+            <!-- Members Screen -->
+            <div id="members" class="screen">
+                <div class="section-title">Members</div>
+                <div id="membersList"></div>
+            </div>
+
+            <!-- Sermons Screen -->
+            <div id="sermons" class="screen">
+                <div style="margin-bottom: 12px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
+                </div>
+                <div class="section-title">Sermons</div>
+                <div id="sermonsList" class="card">Loading sermons...</div>
+            </div>
+
+            <!-- Events Screen -->
+            <div id="events" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                    <button onclick="loadEventsRealtime()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
+                </div>
+                <div class="section-title">Events</div>
+                <div id="eventsList" style="padding: 0;">Loading events...</div>
+            </div>
+
+            <!-- Prayers Screen -->
+            <div id="prayers" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                    <button onclick="loadPrayerRealtime()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
+                </div>
+                <div class="section-title">Prayers</div>
+                <div id="prayerList" style="padding: 0;">Loading prayers...</div>
+            </div>
+
+            <!-- Offering Screen -->
+            <div id="offering" class="screen">
+                <div style="margin-bottom: 12px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
+                </div>
+                <div class="section-title">Make an Offering</div>
+
+                <div class="card" style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 16px;">Your generous offering helps us serve the community and spread God's love.</div>
+
+                    <!-- Offering Amount Selection -->
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Select Amount (₹) or Enter Custom:</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                            <button onclick="setOfferingAmount(500)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹500</button>
+                            <button onclick="setOfferingAmount(1000)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹1000</button>
+                            <button onclick="setOfferingAmount(2500)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹2500</button>
+                            <button onclick="setOfferingAmount(5000)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹5000</button>
+                        </div>
+                        <input type="number" id="customAmount" placeholder="Enter custom amount in ₹" step="1" min="0" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+
+                    <!-- Offering Type -->
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Offering Type:</label>
+                        <select id="offeringType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="General">General Offering</option>
+                            <option value="Tithe">Tithe (10%)</option>
+                            <option value="Special">Special Offering</option>
+                            <option value="Building">Building Fund</option>
+                            <option value="Missions">Missions</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Name (Optional) -->
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Name (Optional):</label>
+                        <input type="text" id="offeringName" placeholder="Your name or Anonymous" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+
+                    <!-- Payment Options Tabs -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button onclick="showPaymentTab('upi')" id="tabUPI" style="flex: 1; background: #1F51B6; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">📱 UPI (0% Fee)</button>
+                        <button onclick="showPaymentTab('razorpay')" id="tabRazorpay" style="flex: 1; background: #f0f0f0; color: #333; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">💳 Razorpay</button>
+                    </div>
+
+                    <!-- UPI Payment Tab -->
+                    <div id="upiTab" style="display: block;">
+                        <div style="background: #f0f8ff; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">📌 Scan to donate via UPI (0% charges)</div>
+                            <div style="text-align: center; background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                                <img id="upiQRCode" src="upi-qr-code.png" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 6px;">
+                            </div>
+                            <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center;">
+                                <div style="font-size: 12px; color: #666; margin-bottom: 6px;">UPI ID:</div>
+                                <div id="upiId" style="font-weight: 600; color: #1F51B6; font-size: 14px; word-break: break-all;">whitefieldchurch@hdfc</div>
+                                <button onclick="copyUPIId()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 8px; font-weight: 600; font-size: 12px;">📋 Copy UPI ID</button>
+                            </div>
+                            <button onclick="initiateUPIPayment()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">🔗 Open UPI App</button>
+                        </div>
+                        <div id="upiStatus" style="text-align: center; font-size: 12px; color: #666; margin-bottom: 12px; display: none;"></div>
+                    </div>
+
+                    <!-- Razorpay Payment Tab -->
+                    <div id="razorpayTab" style="display: none;">
+                        <button onclick="initiateRazorpayPayment()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; margin-bottom: 12px;">🔒 Pay with Razorpay</button>
+                    </div>
+
+                    <!-- Manual Submission Button -->
+                    <button onclick="submitOfferingManual()" style="width: 100%; background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px;">📝 Record Offering (Manual)</button>
+
+                    <div id="offeringStatus" style="margin-top: 12px; text-align: center; font-size: 14px; color: #666; display: none;"></div>
+                </div>
+
+                <!-- Payment Info -->
+                <div class="card" style="background: #f9f9f9; border-left: 4px solid #1F51B6;">
+                    <div style="font-size: 12px; color: #666; line-height: 1.6;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">💳 Payment Methods Available:</div>
+                        <div>✓ UPI (Google Pay, PhonePe, Paytm)</div>
+                        <div>✓ Debit/Credit Cards</div>
+                        <div>✓ Net Banking</div>
+                        <div>✓ Digital Wallets</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Announcements Screen -->
+            <div id="announcements" class="screen">
+                <div style="margin-bottom: 12px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
+                </div>
+                <div style="margin-bottom: 16px; text-align: center;">
+                    <img src="pastor.jpg" alt="Pastor" style="width: 100%; height: 250px; border-radius: 12px; object-fit: cover;">
+                </div>
+                <div class="section-title">From the Pastor</div>
+                <div id="announcementsList" style="padding: 0;">Loading announcements...</div>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchTab(0, this)">🏠 Home</div>
+            <div class="nav-item" onclick="switchTab(1, this)">⭐ Menu</div>
+            <div class="nav-item" onclick="switchTab(2, this)">👥 Members</div>
+            <div class="nav-item" onclick="switchTab(3, this)">🎁 Offering</div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Member Details Modal -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalMemberName" style="margin: 0; color: #333;"></h2>
+                <button class="modal-close" onclick="closeMemberModal()">×</button>
+            </div>
+            <div class="modal-info">
+                <div class="info-row">
+                    <div class="info-label">Type</div>
+                    <div class="info-value" id="modalMemberType"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email</div>
+                    <div class="info-value" id="modalMemberEmail"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value" id="modalMemberPhone"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Baptism Status</div>
+                    <div class="info-value" id="modalMemberBaptism"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts in order -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/mobile-app.js"></script>
+</body>
+</html>
