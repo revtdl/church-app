@@ -171,7 +171,9 @@ async function loadMembersRealtime() {
     let hasData = false;
 
     try {
-        const snapshot = await db.collection('members').orderBy('name').get();
+        const snapshot = await db.collection('members').get();
+        console.log('📱 Members snapshot size:', snapshot.size);
+
         if (snapshot.size > 0) {
             hasData = true;
             snapshot.forEach(doc => {
@@ -184,9 +186,13 @@ async function loadMembersRealtime() {
                     baptism: m.baptismStatus || 'N/A'
                 });
             });
+
+            // Sort by name
+            members.sort((a, b) => a.name.localeCompare(b.name));
+            console.log('✅ Loaded', members.length, 'members');
         }
     } catch (error) {
-        console.log('Error:', error.message);
+        console.log('❌ Error loading members:', error.message);
     }
 
     // Demo members if no data
