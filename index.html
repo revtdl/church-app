@@ -1,39 +1,48 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whitefield Methodist Church</title>
-    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/mobile.css?v=2026083001">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/sheets-sync.js"></script>
+    <script src="js/email-auth.js"></script>
+    <script src="js/bible-api.js"></script>
+    <script src="js/mobile-app.js"></script>
 </head>
 <body>
-    <!-- Mobile Login Screen -->
-    <div id="loginScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
-        <div style="text-align: center; width: 100%; padding: 40px 30px;">
+    <!-- Mobile Login Screen - Email Authentication -->
+    <div id="loginScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; min-height: 100vh;">
+        <div style="text-align: center; width: 100%; max-width: 400px; padding: 40px 20px;">
             <div style="font-size: 72px; margin-bottom: 20px;">⛪</div>
             <h1 style="margin: 0; font-size: 28px; margin-bottom: 10px;">Whitefield Methodist Church</h1>
-            <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Please login</p>
+            <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Members Only Login</p>
 
-            <div style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+            <!-- Email Input Screen -->
+            <div id="emailStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Phone Number</label>
-                    <input type="tel" id="memberPhone" placeholder="Enter your phone" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px;" onkeyup="this.style.borderColor = 'rgba(255,255,255,0.3)'">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Email Address</label>
+                    <input type="email" id="emailInput" placeholder="samuel@church.com" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;" autocomplete="email">
+                    <small style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 4px; display: block;">Enter your church email address</small>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Password</label>
-                    <input type="password" id="memberPassword" placeholder="Enter password" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px;" onkeyup="this.style.borderColor = 'rgba(255,255,255,0.3)'">
-                </div>
-
-                <button onclick="handleMobileLogin()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Login</button>
-
-                <button onclick="guestLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Continue as Guest</button>
+                <button onclick="sendLoginEmail()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Send Login Link</button>
             </div>
 
-            <div id="mobileLoginError" style="color: #ff6b6b; margin-top: 15px; font-size: 12px; display: none;"></div>
+            <!-- Email Verification Screen -->
+            <div id="verificationStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px); display: none; text-align: center;">
+                <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0;">✅ Login link sent to your email!</p>
+                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 20px 0;">Check your inbox and click the link to login</p>
+                <p id="emailVerificationDisplay" style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; color: white; font-size: 13px; margin-bottom: 15px;"></p>
+                <button onclick="resendLoginEmail()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Resend Link</button>
+                <button onclick="backToEmailInput()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Use Different Email</button>
+            </div>
+
+            <div id="loginError" style="color: #ff6b6b; margin-top: 15px; font-size: 13px; display: none; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2);"></div>
         </div>
     </div>
 
@@ -50,46 +59,49 @@
         <div class="content">
             <!-- Home Screen -->
             <div id="home" class="screen active">
-                <div class="section-title">Home</div>
-                <div style="width: 100%; height: 280px; background: linear-gradient(135deg, #00BCD4 0%, #2196F3 50%, #1565C0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 72px; margin-bottom: 16px;">⛪</div>
+                <!-- Hero Section with Church Image -->
+                <div style="width: 100%; height: 320px; background-image: url('church-image.avif'); background-size: cover; background-position: center; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; position: relative; margin-bottom: 16px; overflow: hidden;">
+                    <!-- Dark overlay -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%);"></div>
+
+                    <!-- Welcome Text Only -->
+                    <div style="position: relative; z-index: 2; width: 100%; padding: 24px; color: white;">
+                        <h2 style="font-size: 24px; font-weight: bold; margin: 0; line-height: 1.3;">Welcome to Whitefield Methodist Church</h2>
+                    </div>
+                </div>
 
                 <div class="verse-card">
                     <div class="verse-label">VERSE OF THE DAY</div>
                     <div class="verse-text" id="verseText">"For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."</div>
                     <div class="verse-ref" id="verseRef">John 3:16</div>
                 </div>
-            </div>
 
-            <!-- Featured/Menu Screen -->
-            <div id="featured" class="screen">
-                <div class="section-title">Menu</div>
-
-                <!-- From the Pastor Card -->
-                <div onclick="showScreen('announcements')" style="background: white; border: 2px solid #2196F3; border-radius: 12px; padding: 12px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; overflow: hidden;">
-                    <img src="pastor.jpg" alt="Pastor" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0;">
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">From the Pastor</div></div>
+                <!-- Service Times Below Verse -->
+                <div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 12px; font-size: 14px;">📅 Service Times:</div>
+                    <div style="font-size: 13px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">1</span>
+                            <span style="color: #333;">Tamil Service</span>
+                            <span style="margin-left: auto; font-weight: 600; color: #667eea;">8:00 am</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">2</span>
+                            <span style="color: #333;">Hindi Service</span>
+                            <span style="margin-left: auto; font-weight: 600; color: #667eea;">8:00 am</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">3</span>
+                            <span style="color: #333;">English Service</span>
+                            <span style="margin-left: auto; font-weight: 600; color: #667eea;">10:30 am</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">4</span>
+                            <span style="color: #333;">Sunday School</span>
+                            <span style="margin-left: auto; font-weight: 600; color: #667eea;">9:30 am</span>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Events Card -->
-                <div onclick="showScreen('events')" style="background: white; border: 2px solid #9C27B0; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 32px;">📅</div>
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Events</div></div>
-                </div>
-
-                <!-- Sermons Card -->
-                <div onclick="showScreen('sermons')" style="background: white; border: 2px solid #FFA500; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 32px;">🎤</div>
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Sermons</div></div>
-                </div>
-
-                <!-- Prayers Card -->
-                <div onclick="showScreen('prayers')" style="background: white; border: 2px solid #F44336; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 32px;">❤️</div>
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
-                </div>
-
-                <!-- Offering Button -->
-                <div onclick="showScreen('offering')" style="background: #4CAF50; color: white; border-radius: 12px; padding: 16px; text-align: center; font-weight: bold; cursor: pointer; font-size: 16px;">💰 OFFERING</div>
             </div>
 
             <!-- Members Screen -->
@@ -179,7 +191,9 @@
                         <div style="background: #f0f8ff; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
                             <div style="font-size: 12px; color: #666; margin-bottom: 8px;">📌 Scan to donate via UPI (0% charges)</div>
                             <div style="text-align: center; background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                                <img id="upiQRCode" src="upi-qr-code.png" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 6px;">
+                                <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 6px; margin: 0 auto; color: #999; font-size: 12px; text-align: center;">
+                                    <div>📱 UPI QR Code<br><small>(To add QR code: upload upi-qr-code.png to project folder)</small></div>
+                                </div>
                             </div>
                             <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center;">
                                 <div style="font-size: 12px; color: #666; margin-bottom: 6px;">UPI ID:</div>
@@ -225,14 +239,192 @@
                 <div class="section-title">From the Pastor</div>
                 <div id="announcementsList" style="padding: 0;">Loading announcements...</div>
             </div>
+
+            <!-- Featured/Menu Screen -->
+            <div id="featured" class="screen">
+                <div class="section-title">Menu</div>
+
+                <!-- From the Pastor Card -->
+                <div onclick="showScreen('announcements')" style="background: white; border: 2px solid #2196F3; border-radius: 12px; padding: 12px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; overflow: hidden;">
+                    <div style="font-size: 40px;">📢</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">From the Pastor</div></div>
+                </div>
+
+                <!-- Events Card -->
+                <div onclick="showScreen('events')" style="background: white; border: 2px solid #9C27B0; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">📅</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Events</div></div>
+                </div>
+
+                <!-- Sermons Card -->
+                <div onclick="showScreen('sermons')" style="background: white; border: 2px solid #FFA500; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">🎤</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Sermons</div></div>
+                </div>
+
+                <!-- Prayers Card -->
+                <div onclick="showScreen('prayers')" style="background: white; border: 2px solid #F44336; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">❤️</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
+                </div>
+
+                <!-- Bible Card -->
+                <div onclick="showScreen('bible')" style="background: white; border: 2px solid #667eea; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">📖</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Bible</div></div>
+                </div>
+
+                <!-- Songs Card -->
+                <div onclick="showScreen('songbooks')" style="background: white; border: 2px solid #FF69B4; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">🎵</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Songs</div></div>
+                </div>
+
+                <!-- Offering Button -->
+                <div onclick="showScreen('offering')" style="background: #4CAF50; color: white; border-radius: 12px; padding: 16px; text-align: center; font-weight: bold; cursor: pointer; font-size: 16px;">💰 OFFERING</div>
+            </div>
+
+            <!-- Bible Screen -->
+            <div id="bible" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                </div>
+                <div class="section-title">📖 Bible</div>
+                <div style="margin-bottom: 16px; display: flex; gap: 10px;">
+                    <select id="bibleLanguage" onchange="currentBibleLanguage = this.value; loadBibleBooks();" style="flex: 0 0 40%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        <option value="English">English</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Kannada">Kannada</option>
+                    </select>
+                    <input type="text" id="bibleSearch" placeholder="Search books..." oninput="filterBibleBooks()" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                </div>
+                <div id="bibleBooksList" style="display: grid; grid-template-columns: 1fr; gap: 10px;"></div>
+            </div>
+
+            <!-- Bible Reader Screen -->
+            <div id="bibleReader" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; justify-content: space-between;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">← Back</button>
+                    <div>
+                        <div id="readerBookTitle" style="font-weight: 600; color: #333; font-size: 16px;">Bible</div>
+                        <div id="readerChapterTitle" style="font-size: 12px; color: #666;">Chapter 1</div>
+                    </div>
+                    <button id="bookmarkBtn" onclick="toggleBookmark()" style="background: #FF9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">🔖</button>
+                </div>
+
+                <!-- Bible Options -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
+                    <select id="bibleTheme" onchange="changeBibleTheme(this.value)" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; flex: 1;">
+                        <option value="white" selected>White Theme</option>
+                        <option value="blue">Blue Theme</option>
+                        <option value="dark">Dark Theme</option>
+                        <option value="sepia">Sepia Theme</option>
+                    </select>
+                    <select id="bibleFontSize" onchange="changeBibleFontSize(this.value)" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; flex: 1;">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                        <option value="xlarge">Extra Large</option>
+                    </select>
+                </div>
+
+                <div id="chapterButtons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; overflow-y: auto; max-height: 100px;">
+                    <!-- Chapter buttons will be inserted here -->
+                </div>
+
+                <div id="bibleContent" style="background: white; color: #333; padding: 20px; border-radius: 12px; margin-bottom: 16px; text-align: left; border: 1px solid #ddd;">
+                    <div id="verseReference" style="font-size: 12px; opacity: 0.7; margin-bottom: 10px; text-align: left; color: #666;"></div>
+                    <div id="verseList" style="font-size: 14px; line-height: 1.8; text-align: left !important;"></div>
+                </div>
+            </div>
+
+            <!-- Song Books Screen -->
+            <div id="songbooks" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                </div>
+                <div class="section-title">🎵 Song Books</div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Select Language:</label>
+                    <select id="songLanguage" onchange="loadSongBooks()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        <option value="English">English</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Kannada">Kannada</option>
+                    </select>
+                </div>
+                <div id="songList" style="display: grid; grid-template-columns: 1fr; gap: 10px;"></div>
+            </div>
+
+            <!-- Song Lyrics Modal -->
+            <div id="songModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="songTitle" style="margin: 0; color: #333;"></h2>
+                        <button class="modal-close" onclick="closeSongModal()">×</button>
+                    </div>
+                    <div id="songLyrics" style="color: #333; line-height: 1.8;"></div>
+                </div>
+            </div>
+
+            <!-- Gallery Screen -->
+            <div id="gallery" class="screen">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                </div>
+                <div class="section-title">📸 Gallery</div>
+                <div id="galleryPhotos" style="display: grid; grid-template-columns: 1fr; gap: 16px;"></div>
+            </div>
+
+            <!-- Instagram-Style Full Screen Modal -->
+            <div id="fullscreenImageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; overflow: hidden;">
+                <!-- Close Button -->
+                <div style="position: absolute; top: 16px; right: 16px; z-index: 2001;">
+                    <button onclick="closeFullscreenImage()" style="background: rgba(0,0,0,0.5); border: none; color: white; font-size: 28px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">×</button>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div id="fullscreenContent" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+                    <!-- Image Section -->
+                    <div id="fullscreenImageContainer" style="width: 100%; background: #000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <img id="fullscreenImage" src="" style="max-width: 100%; max-height: 60vh; object-fit: contain;">
+                    </div>
+
+                    <!-- Post Details Section -->
+                    <div id="fullscreenPostDetails" style="padding: 16px; flex: 1; overflow-y: auto;">
+                        <!-- User Info -->
+                        <div id="fullscreenUserInfo" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">👤</div>
+                            <div>
+                                <div id="fullscreenUsername" style="font-weight: 700; font-size: 14px;"></div>
+                                <div id="fullscreenDate" style="font-size: 12px; color: #999;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Caption -->
+                        <div id="fullscreenCaption" style="font-size: 14px; color: #333; line-height: 1.5; margin-bottom: 16px;"></div>
+
+                        <!-- Engagement Stats -->
+                        <div id="fullscreenStats" style="font-size: 14px; color: #333; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;"></div>
+
+                        <!-- Action Buttons -->
+                        <div id="fullscreenActions" style="display: flex; gap: 12px; margin-bottom: 20px;"></div>
+
+                        <!-- Comments Section -->
+                        <div id="fullscreenComments" style="border-top: 1px solid #f0f0f0; padding-top: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Navigation Bar -->
         <div class="nav-bar">
-            <div class="nav-item active" onclick="switchTab(0, this)">🏠 Home</div>
-            <div class="nav-item" onclick="switchTab(1, this)">⭐ Menu</div>
-            <div class="nav-item" onclick="switchTab(2, this)">👥 Members</div>
-            <div class="nav-item" onclick="switchTab(3, this)">🎁 Offering</div>
+            <div class="nav-item active" onclick="switchTab(0, this)"><div>🏠</div><div>Home</div></div>
+            <div class="nav-item" onclick="switchTab(1, this)"><div>⭐</div><div>Menu</div></div>
+            <div class="nav-item" onclick="switchTab(2, this)"><div>👥</div><div>Members</div></div>
+            <div class="nav-item" onclick="switchTab(3, this)"><div>📸</div><div>Gallery</div></div>
         </div>
     </div>
     </div>
@@ -264,9 +456,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Scripts in order -->
-    <script src="js/firebase-config.js"></script>
-    <script src="js/mobile-app.js"></script>
 </body>
 </html>
+

@@ -161,7 +161,7 @@ async function loadEvents() {
             html += '<td>' + (e.eventName || '') + '</td>';
             html += '<td>' + (e.date || '') + '</td>';
             html += '<td>' + (e.location || '') + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editEvent(\'' + docId + '\')">></button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editEvent(\'' + docId + '\')">✏️ Edit</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -191,7 +191,7 @@ async function loadAnnouncements() {
             html += '<tr>';
             html += '<td>' + (a.title || '') + '</td>';
             html += '<td>' + content + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editAnnouncement(\'' + docId + '\')">></button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editAnnouncement(\'' + docId + '\')">✏️ Edit</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -220,7 +220,7 @@ async function loadSermons() {
             html += '<td>' + (s.title || '') + '</td>';
             html += '<td>' + (s.speaker || '') + '</td>';
             html += '<td>' + (s.sermonDate || '') + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editSermon(\'' + docId + '\')">></button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editSermon(\'' + docId + '\')">✏️ Edit</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -250,7 +250,7 @@ async function loadPrayers() {
             html += '<tr>';
             html += '<td>' + (p.title || '') + '</td>';
             html += '<td>' + content + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 18px;" onclick="editPrayer(\'' + docId + '\')">></button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editPrayer(\'' + docId + '\')">✏️ Edit</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -381,35 +381,49 @@ function renderMemberGallery() {
 
 // Modal Functions
 function openEventForm() {
-    document.getElementById('eventModal').style.display = 'flex';
+    const modal = document.getElementById('eventModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        alert('Event form not available');
+    }
 }
 
 function closeEventForm() {
-    document.getElementById('eventModal').style.display = 'none';
+    const modal = document.getElementById('eventModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function openAnnouncementForm() {
-    document.getElementById('announcementModal').style.display = 'flex';
+    const modal = document.getElementById('announcementModal');
+    if (modal) modal.style.display = 'flex';
 }
 
 function closeAnnouncementForm() {
-    document.getElementById('announcementModal').style.display = 'none';
+    const modal = document.getElementById('announcementModal');
+    if (modal) modal.style.display = 'none';
 }
 
 function openSermonForm() {
-    document.getElementById('sermonModal').style.display = 'flex';
+    const modal = document.getElementById('sermonModal');
+    if (modal) modal.style.display = 'flex';
 }
 
 function closeSermonForm() {
-    document.getElementById('sermonModal').style.display = 'none';
+    const modal = document.getElementById('sermonModal');
+    if (modal) modal.style.display = 'none';
 }
 
 function openPrayerForm() {
-    document.getElementById('prayerModal').style.display = 'flex';
+    const modal = document.getElementById('prayerModal');
+    if (modal) modal.style.display = 'flex';
 }
 
 function closePrayerForm() {
-    document.getElementById('prayerModal').style.display = 'none';
+    const modal = document.getElementById('prayerModal');
+    if (modal) modal.style.display = 'none';
 }
 
 function openMemberForm() {
@@ -1129,4 +1143,278 @@ function filterOfferings() {
             (o.type && o.type.toLowerCase().includes(search));
     });
     displayOfferings(filtered);
+}
+
+// ===== EDIT FUNCTIONS FOR ALL SECTIONS =====
+
+// ANNOUNCEMENTS - Save (Create or Update)
+async function saveAnnouncement() {
+    const title = document.getElementById('announcementTitle').value.trim();
+    const content = document.getElementById('announcementContent').value.trim();
+
+    if (!title || !content) {
+        alert('❌ Please fill in all fields');
+        return;
+    }
+
+    try {
+        const announcementData = {
+            title: title,
+            content: content,
+            updatedAt: new Date(),
+            createdAt: new Date()
+        };
+
+        if (window.currentEditId) {
+            // Update existing
+            await db.collection('announcements').doc(window.currentEditId).update(announcementData);
+            alert('✅ Announcement updated successfully!');
+            window.currentEditId = null;
+        } else {
+            // Create new
+            await db.collection('announcements').add(announcementData);
+            alert('✅ Announcement added successfully!');
+        }
+
+        closeAnnouncementForm();
+        resetAnnouncementForm();
+        loadAnnouncements();
+    } catch (error) {
+        console.error('Error saving announcement:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function resetAnnouncementForm() {
+    document.getElementById('announcementTitle').value = '';
+    document.getElementById('announcementContent').value = '';
+}
+
+// EVENTS - Save (Create or Update)
+async function saveEvent() {
+    const eventName = document.getElementById('eventName').value.trim();
+    const date = document.getElementById('eventDate').value;
+    const location = document.getElementById('eventLocation').value.trim();
+    const description = document.getElementById('eventDescription').value.trim();
+
+    if (!eventName || !date || !location) {
+        alert('❌ Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const eventData = {
+            eventName: eventName,
+            date: date,
+            location: location,
+            description: description,
+            updatedAt: new Date()
+        };
+
+        if (window.currentEditId && window.currentEditType === 'event') {
+            await db.collection('events').doc(window.currentEditId).update(eventData);
+            alert('✅ Event updated successfully!');
+            window.currentEditId = null;
+        } else {
+            await db.collection('events').add(eventData);
+            alert('✅ Event added successfully!');
+        }
+
+        closeEventForm();
+        resetEventForm();
+        loadEvents();
+    } catch (error) {
+        console.error('Error saving event:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function resetEventForm() {
+    document.getElementById('eventName').value = '';
+    document.getElementById('eventDate').value = '';
+    document.getElementById('eventLocation').value = '';
+    document.getElementById('eventDescription').value = '';
+}
+
+// SERMONS - Save (Create or Update)
+async function saveSermon() {
+    const title = document.getElementById('sermonTitle').value.trim();
+    const speaker = document.getElementById('sermonSpeaker').value.trim();
+    const date = document.getElementById('sermonDate').value;
+    const description = document.getElementById('sermonDescription').value.trim();
+
+    if (!title || !speaker || !date) {
+        alert('❌ Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const sermonData = {
+            title: title,
+            speaker: speaker,
+            sermonDate: date,
+            description: description,
+            updatedAt: new Date()
+        };
+
+        if (window.currentEditId && window.currentEditType === 'sermon') {
+            await db.collection('sermons').doc(window.currentEditId).update(sermonData);
+            alert('✅ Sermon updated successfully!');
+            window.currentEditId = null;
+        } else {
+            await db.collection('sermons').add(sermonData);
+            alert('✅ Sermon added successfully!');
+        }
+
+        closeSermonForm();
+        resetSermonForm();
+        loadSermons();
+    } catch (error) {
+        console.error('Error saving sermon:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function resetSermonForm() {
+    document.getElementById('sermonTitle').value = '';
+    document.getElementById('sermonSpeaker').value = '';
+    document.getElementById('sermonDate').value = '';
+    document.getElementById('sermonDescription').value = '';
+}
+
+// PRAYERS - Save (Create or Update)
+async function savePrayer() {
+    const title = document.getElementById('prayerTitle').value.trim();
+    const content = document.getElementById('prayerContent').value.trim();
+
+    if (!title || !content) {
+        alert('❌ Please fill in all fields');
+        return;
+    }
+
+    try {
+        const prayerData = {
+            title: title,
+            content: content,
+            updatedAt: new Date(),
+            createdAt: new Date()
+        };
+
+        if (window.currentEditId && window.currentEditType === 'prayer') {
+            await db.collection('prayers').doc(window.currentEditId).update(prayerData);
+            alert('✅ Prayer updated successfully!');
+            window.currentEditId = null;
+        } else {
+            await db.collection('prayers').add(prayerData);
+            alert('✅ Prayer added successfully!');
+        }
+
+        closePrayerForm();
+        resetPrayerForm();
+        loadPrayers();
+    } catch (error) {
+        console.error('Error saving prayer:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function resetPrayerForm() {
+    document.getElementById('prayerTitle').value = '';
+    document.getElementById('prayerContent').value = '';
+}
+
+// ANNOUNCEMENTS - Edit
+async function editAnnouncement(id) {
+    try {
+        const doc = await db.collection('announcements').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            window.currentEditId = id;
+            window.currentEditType = 'announcement';
+
+            document.getElementById('announcementTitle').value = data.title || '';
+            document.getElementById('announcementContent').value = data.content || '';
+
+            const titleEl = document.querySelector('.announcementFormTitle');
+            if (titleEl) titleEl.textContent = 'Edit Announcement';
+
+            openAnnouncementForm();
+        }
+    } catch (error) {
+        console.error('Error loading announcement:', error);
+        alert('Error loading announcement: ' + error.message);
+    }
+}
+
+// EVENTS - Edit
+async function editEvent(id) {
+    try {
+        const doc = await db.collection('events').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            window.currentEditId = id;
+            window.currentEditType = 'event';
+
+            document.getElementById('eventName').value = data.eventName || '';
+            document.getElementById('eventDate').value = data.date || '';
+            document.getElementById('eventLocation').value = data.location || '';
+            document.getElementById('eventDescription').value = data.description || '';
+
+            const titleEl = document.querySelector('.eventFormTitle');
+            if (titleEl) titleEl.textContent = 'Edit Event';
+
+            openEventForm();
+        }
+    } catch (error) {
+        console.error('Error loading event:', error);
+        alert('Error loading event: ' + error.message);
+    }
+}
+
+// SERMONS - Edit
+async function editSermon(id) {
+    try {
+        const doc = await db.collection('sermons').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            window.currentEditId = id;
+            window.currentEditType = 'sermon';
+
+            document.getElementById('sermonTitle').value = data.title || '';
+            document.getElementById('sermonSpeaker').value = data.speaker || '';
+            document.getElementById('sermonDate').value = data.sermonDate || '';
+            document.getElementById('sermonDescription').value = data.description || '';
+
+            const titleEl = document.querySelector('.sermonFormTitle');
+            if (titleEl) titleEl.textContent = 'Edit Sermon';
+
+            openSermonForm();
+        }
+    } catch (error) {
+        console.error('Error loading sermon:', error);
+        alert('Error loading sermon: ' + error.message);
+    }
+}
+
+// PRAYERS - Edit
+async function editPrayer(id) {
+    try {
+        const doc = await db.collection('prayers').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            window.currentEditId = id;
+            window.currentEditType = 'prayer';
+
+            document.getElementById('prayerTitle').value = data.title || '';
+            document.getElementById('prayerContent').value = data.content || '';
+
+            const titleEl = document.querySelector('.prayerFormTitle');
+            if (titleEl) titleEl.textContent = 'Edit Prayer Request';
+
+            openPrayerForm();
+        }
+    } catch (error) {
+        console.error('Error loading prayer:', error);
+        alert('Error loading prayer: ' + error.message);
+    }
 }
