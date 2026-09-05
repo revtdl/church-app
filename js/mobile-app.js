@@ -1604,76 +1604,7 @@ function bookmarkVerse() {
     alert('✅ Verse bookmarked: ' + reference + '\n\nBookmarks feature coming soon!');
 }
 
-// Local Login Functions
-function localLogin() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const errorDiv = document.getElementById('loginError');
-
-    if (!username || !password) {
-        errorDiv.textContent = '❌ Please enter username and password';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    // Get stored users from localStorage
-    const users = JSON.parse(localStorage.getItem('churchUsers')) || {};
-    
-    if (!users[username] || users[username].password !== password) {
-        errorDiv.textContent = '❌ Invalid username or password';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    // Login successful
-    localStorage.setItem('currentUser', username);
-    localStorage.setItem('isLoggedIn', 'true');
-    currentMember = { name: username, email: username + '@church.local' };
-    
-    showApp();
-    errorDiv.style.display = 'none';
-}
-
-function toggleRegister() {
-    document.getElementById('loginForm').style.display = 
-        document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
-    document.getElementById('registerForm').style.display = 
-        document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
-}
-
-function registerUser() {
-    const username = document.getElementById('newUsername').value.trim();
-    const password = document.getElementById('newPassword').value.trim();
-    const errorDiv = document.getElementById('loginError');
-
-    if (!username || !password) {
-        errorDiv.textContent = '❌ Please fill all fields';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem('churchUsers')) || {};
-    
-    if (users[username]) {
-        errorDiv.textContent = '❌ Username already exists';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    // Register new user
-    users[username] = { password: password };
-    localStorage.setItem('churchUsers', JSON.stringify(users));
-    
-    errorDiv.textContent = '✅ Account created! Please login';
-    errorDiv.style.color = '#4CAF50';
-    errorDiv.style.display = 'block';
-    
-    // Clear form and switch to login
-    document.getElementById('newUsername').value = '';
-    document.getElementById('newPassword').value = '';
-    setTimeout(() => toggleRegister(), 1500);
-}
+// Old auth functions removed - using local login instead
 
 function logoutMember() {
     localStorage.removeItem('currentUser');
