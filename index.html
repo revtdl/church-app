@@ -127,11 +127,14 @@
                 <div style="padding: 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 10;">
                     <input type="text" id="memberSearch" placeholder="🔍 Search..." onkeyup="searchMembers()" style="width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; box-sizing: border-box; margin-bottom: 8px;">
 
-                    <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px;">
+                    <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; flex-wrap: wrap;">
                         <button onclick="filterMembersByType('all')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">All</button>
                         <button onclick="filterMembersByType('Member')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Members</button>
                         <button onclick="filterMembersByType('Active')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Active</button>
                         <button onclick="filterMembersByType('Fellowship')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Fellowship</button>
+                        <select id="areaFilter" onchange="filterByArea()" style="padding: 5px 8px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; font-size: 11px;">
+                            <option value="">📍 Area</option>
+                        </select>
                     </div>
                 </div>
 

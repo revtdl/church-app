@@ -284,6 +284,9 @@ async function loadMembersRealtime() {
             // Sort by name
             members.sort((a, b) => a.name.localeCompare(b.name));
             console.log('✅ Loaded', members.length, 'members');
+
+            // Populate area filter
+            setTimeout(() => populateAreaFilter(), 100);
         }
     } catch (error) {
         console.log('❌ Error loading members:', error.message);
@@ -325,13 +328,39 @@ async function loadMembersRealtime() {
     window.allMembers = members;
 }
 
-// Current filter type for members
+// Current filter type and area for members
 let currentMemberFilter = 'all';
+let currentAreaFilter = '';
 
 // Filter Members by Type
 function filterMembersByType(type) {
     currentMemberFilter = type;
+    currentAreaFilter = ''; // Reset area filter
+    document.getElementById('areaFilter').value = '';
     searchMembers(); // Re-apply search with new filter
+}
+
+// Filter Members by Area
+function filterByArea() {
+    currentAreaFilter = document.getElementById('areaFilter').value;
+    searchMembers(); // Re-apply search with new filter
+}
+
+// Populate Area Filter Dropdown
+function populateAreaFilter() {
+    if (!window.allMembers) return;
+
+    const areas = [...new Set(window.allMembers.map(m => m.area).filter(a => a && a.trim()))];
+    areas.sort();
+
+    const areaSelect = document.getElementById('areaFilter');
+    areaSelect.innerHTML = '<option value="">📍 Area</option>';
+    areas.forEach(area => {
+        const option = document.createElement('option');
+        option.value = area;
+        option.textContent = area;
+        areaSelect.appendChild(option);
+    });
 }
 
 // Search Members Function
@@ -346,11 +375,16 @@ function searchMembers() {
         if (currentMemberFilter !== 'all' && m.type !== currentMemberFilter) {
             return false;
         }
+        // Apply area filter
+        if (currentAreaFilter && m.area !== currentAreaFilter) {
+            return false;
+        }
         // Apply search filter
         return m.name.toLowerCase().includes(searchInput) ||
                m.type.toLowerCase().includes(searchInput) ||
                m.email.toLowerCase().includes(searchInput) ||
-               m.phone.toLowerCase().includes(searchInput);
+               m.phone.toLowerCase().includes(searchInput) ||
+               (m.area && m.area.toLowerCase().includes(searchInput));
     });
 
     const html = filtered.map(m => {
