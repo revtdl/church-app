@@ -307,7 +307,7 @@ async function loadMembersRealtime() {
         const initial = m.name.charAt(0).toUpperCase();
         const typeColor = m.type === 'Member' ? '#667eea' : m.type === 'Fellowship' ? '#f5576c' : '#4facfe';
         return `
-            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
+            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}', '${m.area || 'N/A'}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 50px; height: 50px; background: linear-gradient(135deg, ${typeColor} 0%, ${typeColor}dd 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; flex-shrink: 0;">
                     ${initial}
                 </div>
@@ -391,7 +391,7 @@ function searchMembers() {
         const initial = m.name.charAt(0).toUpperCase();
         const typeColor = m.type === 'Member' ? '#667eea' : m.type === 'Fellowship' ? '#f5576c' : '#4facfe';
         return `
-            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
+            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}', '${m.area || 'N/A'}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 50px; height: 50px; background: linear-gradient(135deg, ${typeColor} 0%, ${typeColor}dd 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; flex-shrink: 0;">
                     ${initial}
                 </div>
