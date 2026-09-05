@@ -3,117 +3,72 @@
 
 async function fetchBiblePassage(bookName, chapter, language = 'English') {
     try {
-        // Map book names to standard abbreviations
-        const bookMap = {
-            'Genesis': 'GEN',
-            'Exodus': 'EXO',
-            'Leviticus': 'LEV',
-            'Numbers': 'NUM',
-            'Deuteronomy': 'DEU',
-            'Joshua': 'JOS',
-            'Judges': 'JDG',
-            'Ruth': 'RUT',
-            '1 Samuel': '1SA',
-            '2 Samuel': '2SA',
-            '1 Kings': '1KI',
-            '2 Kings': '2KI',
-            '1 Chronicles': '1CH',
-            '2 Chronicles': '2CH',
-            'Ezra': 'EZR',
-            'Nehemiah': 'NEH',
-            'Esther': 'EST',
-            'Job': 'JOB',
-            'Psalms': 'PSA',
-            'Proverbs': 'PRO',
-            'Ecclesiastes': 'ECC',
-            'Isaiah': 'ISA',
-            'Jeremiah': 'JER',
-            'Lamentations': 'LAM',
-            'Ezekiel': 'EZK',
-            'Daniel': 'DAN',
-            'Hosea': 'HOS',
-            'Joel': 'JOL',
-            'Amos': 'AMO',
-            'Obadiah': 'OBA',
-            'Jonah': 'JON',
-            'Micah': 'MIC',
-            'Nahum': 'NAH',
-            'Habakkuk': 'HAB',
-            'Zephaniah': 'ZEP',
-            'Haggai': 'HAG',
-            'Zechariah': 'ZEC',
-            'Malachi': 'MAL',
-            'Matthew': 'MAT',
-            'Mark': 'MRK',
-            'Luke': 'LUK',
-            'John': 'JHN',
-            'Acts': 'ACT',
-            'Romans': 'ROM',
-            '1 Corinthians': '1CO',
-            '2 Corinthians': '2CO',
-            'Galatians': 'GAL',
-            'Ephesians': 'EPH',
-            'Philippians': 'PHP',
-            'Colossians': 'COL',
-            '1 Thessalonians': '1TH',
-            '2 Thessalonians': '2TH',
-            '1 Timothy': '1TI',
-            '2 Timothy': '2TI',
-            'Titus': 'TIT',
-            'Philemon': 'PHM',
-            'Hebrews': 'HEB',
-            'James': 'JAS',
-            '1 Peter': '1PE',
-            '2 Peter': '2PE',
-            '1 John': '1JN',
-            '2 John': '2JN',
-            '3 John': '3JN',
-            'Jude': 'JUD',
-            'Revelation': 'REV'
-        };
-
-        const bookCode = bookMap[bookName] || bookName;
-        const reference = `${bookCode} ${chapter}`;
-
-        // Try using Bible.com API
-        const response = await fetch(`https://api.scripture.api.bible/v1/bibles/de4e12af7f28f599-02/search?query=${encodeURIComponent(reference)}`, {
-            headers: {
-                'api-key': 'e8f5d1c2b3e4a5f6c7d8e9f0a1b2c3d4'
-            }
-        }).catch(() => null);
+        // Use free Bible API (bible-api.com)
+        const reference = `${bookName} ${chapter}`;
+        const response = await fetch(`https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`);
 
         if (response && response.ok) {
             const data = await response.json();
-            if (data.results && data.results.length > 0) {
-                const verses = data.results.map(result => ({
-                    verse: result.reference || '',
-                    content: result.text || ''
+            if (data.verses && data.verses.length > 0) {
+                const verses = data.verses.map(verse => ({
+                    verse: verse.reference || '',
+                    content: verse.text || ''
                 }));
                 return { verses };
             }
         }
 
-        // Fallback: Return mock verses if API fails
-        return {
-            verses: [
-                {
-                    verse: `${bookName} ${chapter}:1`,
-                    content: 'Bible content could not be loaded. Please check your internet connection.'
-                }
-            ]
-        };
+        // Fallback: Return sample verses if API fails
+        return getSampleVerses(bookName, chapter);
 
     } catch (error) {
         console.error('Error fetching Bible passage:', error);
-        return {
-            verses: [
-                {
-                    verse: 'Error',
-                    content: 'Unable to load Bible verses at this time.'
-                }
-            ]
-        };
+        return getSampleVerses(bookName, chapter);
     }
+}
+
+function getSampleVerses(bookName, chapter) {
+    // Sample Bible verses for display when API is unavailable
+    const sampleVerses = {
+        'Genesis': {
+            1: [
+                { verse: 'Genesis 1:1', content: 'In the beginning God created the heavens and the earth.' },
+                { verse: 'Genesis 1:2', content: 'Now the earth was formless and empty, darkness was over the surface of the deep, and the Spirit of God was hovering over the waters.' }
+            ]
+        },
+        'John': {
+            3: [
+                { verse: 'John 3:16', content: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.' },
+                { verse: 'John 3:17', content: 'For God did not send his Son into the world to condemn the world, but to save the world through him.' }
+            ]
+        },
+        'Psalms': {
+            23: [
+                { verse: 'Psalms 23:1', content: 'The LORD is my shepherd, I shall not be in want.' },
+                { verse: 'Psalms 23:2', content: 'He makes me lie down in green pastures, he leads me beside quiet waters.' }
+            ]
+        },
+        'Romans': {
+            3: [
+                { verse: 'Romans 3:23', content: 'for all have sinned and fall short of the glory of God' },
+                { verse: 'Romans 3:24', content: 'and all are justified freely by his grace through the redemption that came by Christ Jesus.' }
+            ]
+        }
+    };
+
+    const bookVerses = sampleVerses[bookName];
+    if (bookVerses && bookVerses[chapter]) {
+        return { verses: bookVerses[chapter] };
+    }
+
+    return {
+        verses: [
+            {
+                verse: `${bookName} ${chapter}:1`,
+                content: 'Bible content. This is a sample verse. To see full Bible content, please check your internet connection.'
+            }
+        ]
+    };
 }
 
 // Alternative: Use a local Bible data source if available
