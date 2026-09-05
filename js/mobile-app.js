@@ -325,6 +325,15 @@ async function loadMembersRealtime() {
     window.allMembers = members;
 }
 
+// Current filter type for members
+let currentMemberFilter = 'all';
+
+// Filter Members by Type
+function filterMembersByType(type) {
+    currentMemberFilter = type;
+    searchMembers(); // Re-apply search with new filter
+}
+
 // Search Members Function
 function searchMembers() {
     const searchInput = document.getElementById('memberSearch')?.value.toLowerCase() || '';
@@ -332,10 +341,17 @@ function searchMembers() {
 
     if (!window.allMembers) return;
 
-    let filtered = window.allMembers.filter(m =>
-        m.name.toLowerCase().includes(searchInput) ||
-        m.type.toLowerCase().includes(searchInput)
-    );
+    let filtered = window.allMembers.filter(m => {
+        // Apply type filter
+        if (currentMemberFilter !== 'all' && m.type !== currentMemberFilter) {
+            return false;
+        }
+        // Apply search filter
+        return m.name.toLowerCase().includes(searchInput) ||
+               m.type.toLowerCase().includes(searchInput) ||
+               m.email.toLowerCase().includes(searchInput) ||
+               m.phone.toLowerCase().includes(searchInput);
+    });
 
     const html = filtered.map(m => {
         const initial = m.name.charAt(0).toUpperCase();

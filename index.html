@@ -122,7 +122,20 @@
             <!-- Members Screen -->
             <div id="members" class="screen">
                 <div class="section-title">Members</div>
-                <div id="membersList"></div>
+
+                <!-- Search and Filter -->
+                <div style="padding: 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 10;">
+                    <input type="text" id="memberSearch" placeholder="🔍 Search..." onkeyup="searchMembers()" style="width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; box-sizing: border-box; margin-bottom: 8px;">
+
+                    <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px;">
+                        <button onclick="filterMembersByType('all')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">All</button>
+                        <button onclick="filterMembersByType('Member')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Members</button>
+                        <button onclick="filterMembersByType('Active')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Active</button>
+                        <button onclick="filterMembersByType('Fellowship')" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; white-space: nowrap; font-size: 11px;">Fellowship</button>
+                    </div>
+                </div>
+
+                <div id="membersList" style="padding: 12px;"></div>
             </div>
 
             <!-- Sermons Screen -->
