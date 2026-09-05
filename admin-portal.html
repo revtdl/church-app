@@ -1843,7 +1843,7 @@
 
             let filename = `members-${timestamp}-${categoryLabel}`;
             if (searchTerm) filename += `-search`;
-            filename += '.xlsx';
+            filename += '.csv';
 
             link.setAttribute('href', url);
             link.setAttribute('download', filename);
@@ -1907,7 +1907,7 @@
             if (filterType === 'active') filename += '-active';
             else if (filterType === 'baptized') filename += '-baptized';
             else if (filterType === 'married') filename += '-married';
-            filename += '.xlsx';
+            filename += '.csv';
 
             link.setAttribute('href', url);
             link.setAttribute('download', filename);
