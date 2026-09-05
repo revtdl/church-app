@@ -22,8 +22,21 @@
             <h1 style="margin: 0; font-size: 28px; margin-bottom: 10px;">Whitefield Methodist Church</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Members Only Login</p>
 
+            <!-- Local Login Screen -->
+            <div id="localLoginStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Name</label>
+                    <input type="text" id="localNameInput" placeholder="Enter your name" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                    <small style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 4px; display: block;">Enter your name from member list</small>
+                </div>
+
+                <button onclick="localLogin()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">🔓 Local Login</button>
+
+                <button onclick="switchToEmailLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">📧 Use Email Login</button>
+            </div>
+
             <!-- Email Input Screen -->
-            <div id="emailStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+            <div id="emailStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px); display: none;">
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Email Address</label>
                     <input type="email" id="emailInput" placeholder="samuel@church.com" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;" autocomplete="email">
@@ -31,6 +44,8 @@
                 </div>
 
                 <button onclick="sendLoginEmail()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Send Login Link</button>
+
+                <button onclick="switchToLocalLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">🔓 Use Local Login</button>
             </div>
 
             <!-- Email Verification Screen -->
@@ -417,6 +432,14 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Header with Logout -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+            <div>
+                <span id="headerMemberName" style="font-weight: 600;">Loading...</span>
+            </div>
+            <button onclick="localLogout()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">🚪 Logout</button>
         </div>
 
         <!-- Navigation Bar -->

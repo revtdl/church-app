@@ -1,3 +1,57 @@
+// Local Login Functions
+function localLogin() {
+    const name = document.getElementById('localNameInput').value.trim();
+
+    if (!name) {
+        alert('❌ Please enter your name');
+        return;
+    }
+
+    // Store local login info
+    localStorage.setItem('localLogin', 'true');
+    localStorage.setItem('memberName', name);
+
+    // Create mock current member object
+    window.currentMember = { name: name };
+
+    console.log('✅ Local login:', name);
+    showApp();
+}
+
+function switchToEmailLogin() {
+    document.getElementById('localLoginStep').style.display = 'none';
+    document.getElementById('emailStep').style.display = 'block';
+}
+
+function switchToLocalLogin() {
+    document.getElementById('emailStep').style.display = 'none';
+    document.getElementById('localLoginStep').style.display = 'block';
+}
+
+function checkLocalLogin() {
+    const isLocalLogin = localStorage.getItem('localLogin') === 'true';
+    const memberName = localStorage.getItem('memberName');
+
+    if (isLocalLogin && memberName) {
+        window.currentMember = { name: memberName };
+        console.log('✅ Resuming local login:', memberName);
+        showApp();
+        return true;
+    }
+
+    // Show local login by default
+    document.getElementById('localLoginStep').style.display = 'block';
+    document.getElementById('emailStep').style.display = 'none';
+    return false;
+}
+
+function localLogout() {
+    localStorage.removeItem('localLogin');
+    localStorage.removeItem('memberName');
+    window.currentMember = null;
+    location.reload();
+}
+
 // App Display Functions (Authentication handled in phone-auth.js)
 
 function showApp() {
@@ -8,6 +62,12 @@ function showApp() {
     if (appContainer) {
         appContainer.style.display = 'flex';
         appContainer.style.visibility = 'visible';
+    }
+
+    // Update header with member name
+    const headerName = document.getElementById('headerMemberName');
+    if (headerName && window.currentMember) {
+        headerName.textContent = `👤 ${window.currentMember.name}`;
     }
 
     console.log('App container shown');
@@ -46,7 +106,10 @@ function initializeApp() {
 
 // Check login on page load
 document.addEventListener('DOMContentLoaded', function() {
-    checkMemberLogin();
+    // Try local login first, then fall back to email auth
+    if (!checkLocalLogin()) {
+        checkMemberLogin();
+    }
 });
 
 // Navigation Functions
