@@ -1,6 +1,15 @@
 // Local Login Functions
 function localLogin() {
-    const name = document.getElementById('localNameInput').value.trim();
+    // Find the name input - it might have different IDs
+    let nameInput = document.getElementById('localNameInput') ||
+                    document.querySelector('input[placeholder="Enter your name"]');
+
+    if (!nameInput) {
+        alert('❌ Name input not found');
+        return;
+    }
+
+    const name = nameInput.value.trim();
 
     if (!name) {
         alert('❌ Please enter your name');
