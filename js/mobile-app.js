@@ -32,6 +32,8 @@ function checkLocalLogin() {
     const isLocalLogin = localStorage.getItem('localLogin') === 'true';
     const memberName = localStorage.getItem('memberName');
 
+    console.log('🔍 Checking local login... stored:', isLocalLogin, 'name:', memberName);
+
     if (isLocalLogin && memberName) {
         window.currentMember = { name: memberName };
         console.log('✅ Resuming local login:', memberName);
@@ -40,8 +42,22 @@ function checkLocalLogin() {
     }
 
     // Show local login by default
-    document.getElementById('localLoginStep').style.display = 'block';
-    document.getElementById('emailStep').style.display = 'none';
+    try {
+        const loginScreen = document.getElementById('loginScreen');
+        const localStep = document.getElementById('localLoginStep');
+        const emailStep = document.getElementById('emailStep');
+        const verifyStep = document.getElementById('verificationStep');
+
+        if (loginScreen) loginScreen.style.display = 'flex';
+        if (localStep) localStep.style.display = 'block';
+        if (emailStep) emailStep.style.display = 'none';
+        if (verifyStep) verifyStep.style.display = 'none';
+
+        console.log('✅ Local login screen shown');
+    } catch (e) {
+        console.error('Error showing local login:', e);
+    }
+
     return false;
 }
 
@@ -106,9 +122,15 @@ function initializeApp() {
 
 // Check login on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Try local login first, then fall back to email auth
+    // Try local login first
     if (!checkLocalLogin()) {
-        checkMemberLogin();
+        // If no local login, check for email/firebase auth
+        // But delay slightly to let email-auth.js run
+        setTimeout(() => {
+            if (!document.getElementById('appContainer')?.style.display === 'flex') {
+                checkMemberLogin();
+            }
+        }, 500);
     }
 });
 
