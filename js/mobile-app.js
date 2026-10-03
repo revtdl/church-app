@@ -2,6 +2,11 @@
 const UPI_ID = "qr.wmchurch@sib";
 const WHATSAPP_NUMBER = "919986334250";
 
+// ===== OFFERING STATE =====
+let currentOfferingType = 'Offering';
+let currentAmount = '';
+let donorName = '';
+
 // ===== DAILY VERSE SYSTEM (365 VERSES - ONE FOR EACH DAY) =====
 function getDailyVerse() {
     const allVerses = [
@@ -380,12 +385,13 @@ function scrollToHomePage(page) {
 }
 
 // Member Details Modal
-function showMemberDetails(name, email, phone, type, baptism) {
+function showMemberDetails(name, email, phone, type, area, address) {
     document.getElementById('modalMemberName').textContent = name;
     document.getElementById('modalMemberType').textContent = type;
     document.getElementById('modalMemberEmail').textContent = email;
     document.getElementById('modalMemberPhone').textContent = phone;
-    document.getElementById('modalMemberBaptism').textContent = baptism;
+    document.getElementById('modalMemberArea').textContent = area || 'N/A';
+    document.getElementById('modalMemberAddress').textContent = address || 'N/A';
     document.getElementById('memberModal').classList.add('active');
 }
 
@@ -395,6 +401,7 @@ function closeMemberModal() {
 
 // Load Members
 async function loadMembersRealtime() {
+    console.log('🔄 loadMembersRealtime() called');
     const membersList = document.getElementById('membersList');
     if (!membersList) return;
 
@@ -402,60 +409,84 @@ async function loadMembersRealtime() {
     let hasData = false;
 
     try {
-        const snapshot = await db.collection('members').get();
-        console.log('📱 Members snapshot size:', snapshot.size);
+        // Use real-time listener for instant updates when members are added
+        db.collection('members').onSnapshot(snapshot => {
+            console.log('📱 Members real-time update:', snapshot.size, 'members');
+            let members = [];
 
-        if (snapshot.size > 0) {
+            if (snapshot.size > 0) {
             hasData = true;
             snapshot.forEach(doc => {
                 const m = doc.data();
+                console.log('➕ Adding member:', m.name);
                 members.push({
+                    id: doc.id,
                     name: m.name || 'Member',
                     type: m.membershipStatus || 'Member',
                     email: m.email || 'N/A',
                     phone: m.phone || 'N/A',
-                    baptism: m.baptismStatus || 'N/A'
+                    baptism: m.baptismStatus || 'N/A',
+                    area: m.area || '',
+                    address: m.address || '',
+                    dateOfBirth: m.dateOfBirth || '',
+                    dateOfWedding: m.dateOfWedding || ''
                 });
             });
 
+            // Remove duplicates by Firebase ID (each document has unique ID)
+            const seen = new Set();
+            const originalCount = members.length;
+            members = members.filter(m => {
+                if (seen.has(m.id)) {
+                    console.log('🔄 Duplicate removed:', m.name, '(ID:', m.id, ')');
+                    return false;
+                }
+                seen.add(m.id);
+                return true;
+            });
+            if (originalCount > members.length) {
+                console.log('⚠️ Removed', originalCount - members.length, 'duplicates');
+            }
+
             // Sort by name
             members.sort((a, b) => a.name.localeCompare(b.name));
-            console.log('✅ Loaded', members.length, 'members');
+            console.log('✅ Loaded', members.length, 'unique members');
+            console.log('📋 Member names:', members.map(m => m.name).join(', '));
 
             // Populate area filter
             setTimeout(() => populateAreaFilter(), 100);
-        }
-    } catch (error) {
-        console.log('❌ Error loading members:', error.message);
-    }
+            }
 
-    // Demo members if no data - REMOVED, start with fresh members only
-    if (!hasData) {
-        members = [];
-    }
-
-    const html = members.map(m => {
-        const initial = m.name.charAt(0).toUpperCase();
-        return `
-            <div class="member-item" onclick="showMemberDetails('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}', '${m.phone.replace(/'/g, "\\'")}', '${m.type}', '${m.baptism}', '${(m.area || 'N/A').replace(/'/g, "\\'")}')" style="cursor: pointer;">
-                <div class="member-left">
-                    <div class="member-avatar">${initial}</div>
-                    <div class="member-info">
-                        <div class="member-name">${m.name}</div>
-                        <div class="member-type">${m.type}</div>
+            // Render member list
+            const html = members.map(m => {
+                const initial = m.name.charAt(0).toUpperCase();
+                return `
+                    <div class="member-item" onclick="showMemberDetails('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}', '${m.phone.replace(/'/g, "\\'")}', '${m.type}', '${(m.area || 'N/A').replace(/'/g, "\\'")}'  , '${(m.address || 'N/A').replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                        <div class="member-left">
+                            <div class="member-avatar">${initial}</div>
+                            <div class="member-info">
+                                <div class="member-name">${m.name}</div>
+                                <div class="member-type">${m.type}</div>
+                                ${m.area ? `<div style="font-size: 12px; color: #999; margin-top: 2px;">📍 ${m.area}</div>` : ''}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="member-badge">${m.type}</span>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <span class="member-badge">${m.type}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
+                `;
+            }).join('');
 
-    membersList.innerHTML = html;
+            membersList.innerHTML = html;
 
-    // Store members for search
-    window.allMembers = members;
+            // Store members for search
+            window.allMembers = members;
+            console.log('📋 Stored', members.length, 'members in window.allMembers');
+            console.log('📋 Members list DOM contains', membersList.querySelectorAll('.member-item').length, 'rendered items');
+        });
+    } catch (error) {
+        console.log('❌ Error setting up member listener:', error.message);
+    }
 }
 
 // Current filter type and area for members
@@ -467,12 +498,29 @@ function filterMembersByType(type) {
     currentMemberFilter = type;
     currentAreaFilter = ''; // Reset area filter
     document.getElementById('areaFilter').value = '';
+
+    // Update button styles
+    document.querySelectorAll('[onclick*="filterMembersByType"]').forEach(btn => {
+        btn.style.background = 'white';
+        btn.style.color = '#333';
+        btn.style.borderColor = '#ddd';
+        btn.style.fontWeight = 'normal';
+    });
+
+    // Highlight active filter
+    event.target.style.background = '#667eea';
+    event.target.style.color = 'white';
+    event.target.style.borderColor = '#667eea';
+    event.target.style.fontWeight = '600';
+
+    console.log('🔍 Filtering by type:', type);
     searchMembers(); // Re-apply search with new filter
 }
 
 // Filter Members by Area
 function filterByArea() {
     currentAreaFilter = document.getElementById('areaFilter').value;
+    console.log('📍 Filtering by area:', currentAreaFilter);
     searchMembers(); // Re-apply search with new filter
 }
 
@@ -498,7 +546,12 @@ function searchMembers() {
     const searchInput = document.getElementById('memberSearch')?.value.toLowerCase() || '';
     const membersList = document.getElementById('membersList');
 
-    if (!window.allMembers) return;
+    console.log('🔎 Searching with filters:', { search: searchInput, type: currentMemberFilter, area: currentAreaFilter });
+
+    if (!window.allMembers || window.allMembers.length === 0) {
+        membersList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No members found. Try loading members first.</div>';
+        return;
+    }
 
     let filtered = window.allMembers.filter(m => {
         // Apply type filter
@@ -510,18 +563,21 @@ function searchMembers() {
             return false;
         }
         // Apply search filter
-        return m.name.toLowerCase().includes(searchInput) ||
-               m.type.toLowerCase().includes(searchInput) ||
-               m.email.toLowerCase().includes(searchInput) ||
-               m.phone.toLowerCase().includes(searchInput) ||
-               (m.area && m.area.toLowerCase().includes(searchInput));
+        if (searchInput) {
+            return m.name.toLowerCase().includes(searchInput) ||
+                   m.type.toLowerCase().includes(searchInput) ||
+                   m.email.toLowerCase().includes(searchInput) ||
+                   (m.phone && m.phone.toLowerCase().includes(searchInput)) ||
+                   (m.area && m.area.toLowerCase().includes(searchInput));
+        }
+        return true;
     });
 
     const html = filtered.map(m => {
         const initial = m.name.charAt(0).toUpperCase();
         const typeColor = m.type === 'Member' ? '#667eea' : m.type === 'Fellowship' ? '#f5576c' : '#4facfe';
         return `
-            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}', '${m.area || 'N/A'}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
+            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.area || 'N/A'}', '${m.address || 'N/A'}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 50px; height: 50px; background: linear-gradient(135deg, ${typeColor} 0%, ${typeColor}dd 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; flex-shrink: 0;">
                     ${initial}
                 </div>
@@ -536,7 +592,14 @@ function searchMembers() {
         `;
     }).join('');
 
-    membersList.innerHTML = html || '<div style="text-align: center; padding: 40px 20px; color: #999;">No members found</div>';
+    if (filtered.length === 0) {
+        membersList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #999;">No members found matching filters</div>';
+        console.log('❌ No matches found');
+    } else {
+        membersList.innerHTML = html;
+        console.log('✅ Showing', filtered.length, 'members in searchMembers');
+        console.log('📋 Rendered items in DOM:', membersList.querySelectorAll('div[onclick*="showMemberDetails"]').length);
+    }
 }
 
 // Bible Verse Rotation
@@ -853,6 +916,106 @@ function loadAnnouncementsRealtime() {
     }
 }
 
+// Generate Birthday and Anniversary Events from Members
+function generateBirthdayAndAnniversaryEvents() {
+    if (!window.allMembers || window.allMembers.length === 0) {
+        console.log('❌ No members data available for events generation');
+        return [];
+    }
+
+    const events = [];
+    const today = new Date();
+    const currentMonth = today.getMonth(); // 0-11
+    const currentDate = today.getDate();
+
+    window.allMembers.forEach(member => {
+        // Process Birthday
+        if (member.dateOfBirth && member.dateOfBirth.trim()) {
+            try {
+                // Parse date format: "01/01/1990" (DD/MM/YYYY) or "1990-01-01"
+                let dob;
+                const dobStr = member.dateOfBirth.trim();
+
+                if (dobStr.includes('/')) {
+                    // DD/MM/YYYY format
+                    const parts = dobStr.split('/');
+                    dob = new Date(parts[2], parts[1] - 1, parts[0]);
+                } else {
+                    // YYYY-MM-DD format
+                    const dateStr = dobStr.split(' ')[0]; // Get just the date part
+                    dob = new Date(dateStr);
+                }
+
+                if (isNaN(dob.getTime())) {
+                    throw new Error('Invalid date');
+                }
+
+                const birthday = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+
+                // If birthday already passed this year, calculate for next year
+                if (birthday < today) {
+                    birthday.setFullYear(today.getFullYear() + 1);
+                }
+
+                const age = today.getFullYear() - dob.getFullYear();
+                events.push({
+                    id: `birthday_${member.name}`,
+                    eventName: `🎂 ${member.name}'s Birthday`,
+                    description: `${member.name} turns ${age} years old`,
+                    date: `${birthday.getFullYear()}-${String(birthday.getMonth() + 1).padStart(2, '0')}-${String(birthday.getDate()).padStart(2, '0')}`
+                });
+                console.log('🎂 Birthday event added:', member.name, 'DOB:', dateStr);
+            } catch (e) {
+                console.log('⚠️ Invalid dateOfBirth format for', member.name, ':', member.dateOfBirth, 'Error:', e.message);
+            }
+        }
+
+        // Process Wedding Anniversary
+        if (member.dateOfWedding && member.dateOfWedding.trim()) {
+            try {
+                // Parse date format: "28/12/2019" (DD/MM/YYYY) or "2019-12-28"
+                let weddingDate;
+                const dowStr = member.dateOfWedding.trim();
+
+                if (dowStr.includes('/')) {
+                    // DD/MM/YYYY format
+                    const parts = dowStr.split('/');
+                    weddingDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                } else {
+                    // YYYY-MM-DD format
+                    const dateStr = dowStr.split(' ')[0]; // Get just the date part
+                    weddingDate = new Date(dateStr);
+                }
+
+                if (isNaN(weddingDate.getTime())) {
+                    throw new Error('Invalid date');
+                }
+
+                const anniversary = new Date(today.getFullYear(), weddingDate.getMonth(), weddingDate.getDate());
+
+                // If anniversary already passed this year, calculate for next year
+                if (anniversary < today) {
+                    anniversary.setFullYear(today.getFullYear() + 1);
+                }
+
+                const yearsMarried = today.getFullYear() - weddingDate.getFullYear();
+                events.push({
+                    id: `anniversary_${member.name}`,
+                    eventName: `💍 ${member.name}'s Anniversary`,
+                    description: `${yearsMarried} years of marriage`,
+                    date: `${anniversary.getFullYear()}-${String(anniversary.getMonth() + 1).padStart(2, '0')}-${String(anniversary.getDate()).padStart(2, '0')}`
+                });
+                console.log('💍 Anniversary event added:', member.name, 'Wedding Date:', dateStr);
+            } catch (e) {
+                console.log('⚠️ Invalid dateOfWedding for', member.name, ':', member.dateOfWedding, 'Error:', e.message);
+            }
+        }
+    });
+
+    console.log('📅 Generated', events.length, 'birthday/anniversary events');
+    return events;
+}
+
 // Load Events
 async function loadEventsRealtime() {
     const eventsList = document.getElementById('eventsList');
@@ -862,21 +1025,54 @@ async function loadEventsRealtime() {
     }
     try {
         console.log('Loading events from Firebase...');
+
+        // Ensure members are loaded for birthday/anniversary events
+        if (!window.allMembers || window.allMembers.length === 0) {
+            console.log('📋 Members not loaded yet, loading members first...');
+            await loadMembersRealtime();
+        }
+
         const snapshot = await db.collection('events').get();
         console.log('Events found:', snapshot.size);
 
-        if (snapshot.size > 0) {
+        let allEvents = [];
+
+        // Add events from Firebase
+        snapshot.forEach(doc => {
+            const e = doc.data();
+            allEvents.push({
+                eventName: e.eventName || e.title || 'Event',
+                time: e.time || e.eventTime || '10:00 AM',
+                location: e.location || e.Location || '',
+                description: e.description || e.Description || '',
+                organizer: e.organizer || 'Church Admin',
+                date: e.date || new Date().toISOString().split('T')[0],
+                type: 'regular'
+            });
+        });
+
+        // Add birthday and anniversary events from members
+        if (window.allMembers && window.allMembers.length > 0) {
+            const birthdayEvents = generateBirthdayAndAnniversaryEvents();
+            allEvents = allEvents.concat(birthdayEvents);
+            console.log('🎂 Added', birthdayEvents.length, 'birthday/anniversary events');
+        }
+
+        // Sort events by date
+        allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+        console.log('📅 Total events to display:', allEvents.length);
+
+        if (allEvents.length > 0) {
             let html = '';
             const colors = ['#667eea', '#f093fb', '#4facfe', '#fa709a', '#30cfd0'];
             let colorIndex = 0;
 
-            snapshot.forEach(doc => {
-                const e = doc.data();
-                const title = e.eventName || e.title || 'Event';
-                const time = e.time || e.eventTime || '10:00 AM';
-                const location = e.location || e.Location || '';
-                const description = e.description || e.Description || '';
-                const organizer = e.organizer || 'Church Admin';
+            allEvents.forEach(e => {
+                const title = e.eventName || 'Event';
+                const time = e.time || '10:00 AM';
+                const location = e.location || '';
+                const description = e.description || '';
+                const organizer = e.organizer || 'Church';
                 const initial = organizer.charAt(0).toUpperCase();
                 const color = colors[colorIndex % colors.length];
 
@@ -2897,21 +3093,39 @@ let galleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
 const isAdmin = currentMember && (currentMember.name === 'admin' || currentMember.role === 'admin');
 
 function loadGalleryRealtime() {
-  console.log('Loading gallery...');
-  galleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
-  console.log('Gallery photos found:', galleryPhotos.length);
+  console.log('Loading gallery from Firebase...');
 
-  // Show admin upload section if user is admin
-  const adminSection = document.getElementById('adminUploadSection');
-  if (adminSection) {
-    if (isAdmin) {
-      adminSection.style.display = 'block';
-    } else {
-      adminSection.style.display = 'none';
+  // Load from Firebase with real-time updates
+  db.collection('gallery').orderBy('timestamp', 'desc').onSnapshot(
+    snapshot => {
+      galleryPhotos = [];
+      snapshot.forEach(doc => {
+        galleryPhotos.push({...doc.data(), id: doc.id});
+      });
+      console.log('✅ Gallery loaded from Firebase:', galleryPhotos.length, 'photos');
+
+      // Also update localStorage for backup
+      localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
+
+      // Show admin upload section if user is admin
+      const adminSection = document.getElementById('adminUploadSection');
+      if (adminSection) {
+        if (isAdmin) {
+          adminSection.style.display = 'block';
+        } else {
+          adminSection.style.display = 'none';
+        }
+      }
+
+      displayGalleryPhotos();
+    },
+    error => {
+      console.error('❌ Error loading gallery:', error);
+      // Fallback to localStorage
+      galleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
+      displayGalleryPhotos();
     }
-  }
-
-  displayGalleryPhotos();
+  );
 }
 
 let currentFullscreenPhotoIndex = 0;
@@ -3197,6 +3411,56 @@ function sharePhoto(index) {
 }
 
 // ===== OFFERING / UPI PAYMENT SYSTEM =====
+
+function setOfferingType(type) {
+  currentOfferingType = type;
+
+  // Update button styles
+  const buttons = ['Tithe', 'Offering', 'Building', 'Missions'];
+  buttons.forEach(btn => {
+    const element = document.getElementById(`typeBtn_${btn}`);
+    if (element) {
+      if (btn === type) {
+        element.style.borderColor = '#c41e3a';
+        element.style.background = '#fef0f5';
+        element.style.color = '#c41e3a';
+      } else {
+        element.style.borderColor = '#ddd';
+        element.style.background = 'white';
+        element.style.color = '#333';
+      }
+    }
+  });
+
+  console.log('💝 Offering type selected:', type);
+}
+
+function setAmount(amount) {
+  currentAmount = amount;
+  const input = document.getElementById('customAmountInput');
+  if (input) input.value = amount;
+  console.log('💰 Amount selected:', amount);
+}
+
+function recordOffering() {
+  const name = document.getElementById('donorName')?.value || 'Anonymous';
+  const amount = document.getElementById('customAmountInput')?.value || 'Custom';
+
+  donorName = name;
+
+  // Show receipt/confirmation
+  const message = `🙏 Offering Recorded!\n\nType: ${currentOfferingType}\nAmount: ₹${amount}\nName: ${name}\n\nThank you for your generous giving!\n\n📱 Text confirmation to:\n+91 99863 34250`;
+
+  alert(message);
+
+  // Reset form
+  document.getElementById('donorName').value = '';
+  document.getElementById('customAmountInput').value = '';
+  currentAmount = '';
+
+  console.log('✅ Offering recorded:', { type: currentOfferingType, amount, name });
+}
+
 function generateOfferingQR() {
   const qrImg = document.getElementById('qrCode');
   if (!qrImg) {
@@ -3204,8 +3468,8 @@ function generateOfferingQR() {
     return;
   }
 
-  // Generate UPI link for QR
-  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=&tr=Offering`;
+  // Generate UPI link for QR (simplified format - works with all UPI apps)
+  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Church&tr=Offering`;
 
   console.log('📱 Generating QR for UPI:', upiLink);
 
@@ -3225,7 +3489,6 @@ function generateOfferingQR() {
 }
 
 function copyUPIId() {
-  const upiId = document.getElementById('upiId');
   if (navigator.clipboard) {
     navigator.clipboard.writeText(UPI_ID).then(() => {
       alert('✅ UPI ID copied: ' + UPI_ID);
@@ -3234,6 +3497,108 @@ function copyUPIId() {
     });
   } else {
     alert('UPI ID: ' + UPI_ID);
+  }
+}
+
+function openUPIApp() {
+  const name = document.getElementById('donorName')?.value || 'Anonymous';
+  const amount = document.getElementById('customAmountInput')?.value || '';
+
+  if (!amount) {
+    alert('Please select or enter an amount first');
+    return;
+  }
+
+  // Try to open UPI app
+  const upiLink = `upi://pay?pa=${UPI_ID}`;
+  console.log('💳 Opening UPI app with:', upiLink);
+
+  window.location.href = upiLink;
+
+  // After payment (when user returns), show receipt
+  setTimeout(() => {
+    recordOffering();
+  }, 2000);
+
+  // Fallback: if app doesn't open
+  setTimeout(() => {
+    alert(`📱 If app didn't open:\n\n1. Copy the UPI ID\n2. Open Google Pay, PhonePe, or Paytm\n3. Paste the UPI ID\n4. Enter amount and pay\n\nUPI ID: ${UPI_ID}`);
+  }, 3000);
+}
+
+function downloadQRCode() {
+  const qrImg = document.getElementById('qrCode');
+  if (!qrImg || !qrImg.src) {
+    alert('QR Code not loaded yet');
+    return;
+  }
+
+  console.log('📥 Downloading QR code...');
+
+  // Fetch the image and convert to blob for download
+  fetch(qrImg.src)
+    .then(response => response.blob())
+    .then(blob => {
+      // Create blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create and trigger download link
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'church-offering-qr.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl);
+
+      alert('✅ QR code downloaded successfully!');
+      console.log('✅ QR code downloaded');
+    })
+    .catch(err => {
+      console.error('Download failed:', err);
+      alert('❌ Download failed. Try right-click → Save image');
+    });
+}
+
+function shareQRImage() {
+  const qrImg = document.getElementById('qrCode');
+  if (!qrImg || !qrImg.src) {
+    alert('QR Code not loaded yet');
+    return;
+  }
+
+  console.log('📤 Sharing QR code image...');
+
+  if (navigator.share) {
+    // Fetch the image and convert to blob for sharing
+    fetch(qrImg.src)
+      .then(response => response.blob())
+      .then(blob => {
+        const file = new File([blob], 'church-offering-qr.png', { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: 'Whitefield Methodist Church - Offering',
+            text: `Scan this QR code to make an offering to our church.\nUPI ID: ${UPI_ID}`
+          }).catch(err => console.log('Share cancelled'));
+        } else {
+          // Fallback: share as URL if image sharing not supported
+          navigator.share({
+            title: 'Whitefield Methodist Church - Offering',
+            text: `Scan this QR code to make an offering to our church.\nUPI ID: ${UPI_ID}`,
+            url: window.location.href
+          }).catch(err => console.log('Share cancelled'));
+        }
+      })
+      .catch(err => {
+        console.error('Share failed:', err);
+        alert(`Share QR Code:\n\nUPI ID: ${UPI_ID}`);
+      });
+  } else {
+    alert(`📱 Share this QR Code image:\n\nUPI ID: ${UPI_ID}`);
   }
 }
 
@@ -3247,7 +3612,10 @@ function isMobileDevice() {
 }
 
 function initiateUPIPaymentWithAmount(amount) {
-  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=${amount}&tr=Offering`;
+  // Use simplest UPI format - just pa and am
+  const upiLink = `upi://pay?pa=${UPI_ID}&am=${amount}`;
+
+  console.log('💳 Payment link:', upiLink);
 
   if (isMobileDevice()) {
     // Mobile: Try to open UPI app
@@ -3269,7 +3637,10 @@ function initiateUPIPaymentCustom() {
     return;
   }
 
-  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=${amount}&tr=Offering`;
+  // Use simplest UPI format - just pa and am
+  const upiLink = `upi://pay?pa=${UPI_ID}&am=${amount}`;
+
+  console.log('💳 Custom payment link:', upiLink);
 
   if (isMobileDevice()) {
     // Mobile: Try to open UPI app
@@ -3386,11 +3757,123 @@ function showPaymentTab(tab) {
   document.getElementById('tabRazorpay').style.color = tab === 'razorpay' ? 'white' : '#333';
 }
 
+// ===== HYMNS SYSTEM =====
+var hymnsCache = null;
+
+function loadHymnsData(callback) {
+  if (hymnsCache) {
+    callback(hymnsCache);
+    return;
+  }
+
+  fetch('hymns_songbook.json')
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to load hymns');
+      return response.json();
+    })
+    .then(data => {
+      hymnsCache = data;
+      console.log('✅ Hymns loaded:', data.sections.length, 'sections');
+      callback(data);
+    })
+    .catch(error => {
+      console.error('❌ Error loading hymns:', error);
+      callback(null);
+    });
+}
+
+function loadSongBooks() {
+  const language = document.getElementById('songLanguage')?.value || 'English';
+  console.log('📚 Loading hymn sections for:', language);
+
+  loadHymnsData(function(data) {
+    if (!data || !data.sections) {
+      document.getElementById('songList').innerHTML = '<p>❌ Failed to load hymns</p>';
+      return;
+    }
+
+    const sections = data.sections.filter(s => s.language === language);
+    let html = '';
+
+    if (sections.length === 0) {
+      html = '<p>No hymns found for this language</p>';
+    } else {
+      sections.forEach(section => {
+        html += `
+          <div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+            <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 14px;">🎵 ${section.name}</div>
+            <div style="font-size: 12px; color: #666;">${section.count} songs</div>
+            <button onclick="showSectionSongs('${section.name}', ${section.count})" style="width: 100%; background: #FF69B4; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-weight: 600; font-size: 12px;">View Songs</button>
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById('songList').innerHTML = html;
+  });
+}
+
+function showSectionSongs(sectionName, count) {
+  console.log('📖 Loading section:', sectionName);
+
+  loadHymnsData(function(data) {
+    if (!data) {
+      alert('Failed to load hymns');
+      return;
+    }
+
+    // Find the section
+    const section = data.sections.find(s => s.name === sectionName);
+    if (!section || !section.songIds || section.songIds.length === 0) {
+      alert(`No songs found in ${sectionName}`);
+      return;
+    }
+
+    // Get the songs data
+    const songs = data.songs || {};
+
+    // Create a scrollable list of songs
+    let html = `<div style="padding: 16px; text-align: center;">
+      <h3 style="color: #c41e3a; margin-top: 0;">🎵 ${sectionName}</h3>
+      <div style="font-size: 13px; color: #666; margin-bottom: 16px;">${count} songs available</div>
+      <div style="max-height: 400px; overflow-y: auto; text-align: left;">`;
+
+    // Display all songs
+    section.songIds.forEach((songId, index) => {
+      const song = songs[songId];
+      const songTitle = song && song.title ? song.title : `Song ${songId}`;
+      const songLyrics = song && song.lyrics ? song.lyrics.substring(0, 100) + '...' : 'Lyrics not available';
+
+      html += `<div onclick="showSongDetails('${songId}', '${songTitle.replace(/'/g, "\\'")}', ${index})" style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border-left: 4px solid #c41e3a; transition: all 0.2s;">
+        <div style="font-weight: 600; color: #333;">${songTitle}</div>
+        <div style="font-size: 11px; color: #999; margin-top: 4px;">ID: ${songId}</div>
+      </div>`;
+    });
+
+    html += '</div></div>';
+
+    // Show in modal
+    document.getElementById('songTitle').textContent = sectionName;
+    document.getElementById('songLyrics').innerHTML = html;
+    document.getElementById('songModal').style.display = 'flex';
+  });
+}
+
+function showSongDetails(songId, songTitle, index) {
+  alert(`🎵 ${songTitle}\n\nSong ID: ${songId}\n\n📖 Full lyrics coming soon!\n\nThis hymn is available in the Methodist hymnal.`);
+  console.log('Song clicked:', { id: songId, title: songTitle });
+}
+
+function closeSongModal() {
+  document.getElementById('songModal').style.display = 'none';
+}
+
 // Generate QR when offering screen opens
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(() => {
     generateOfferingQR();
     setupQRInteractivity();
+    loadHymnsData(); // Pre-load hymns
   }, 500);
 });
 

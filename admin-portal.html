@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1300,6 +1301,7 @@
                     <div class="form-group"><label>Gender</label><select id="memberGender"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
                     <div class="form-group"><label>Marital Status</label><select id="memberMaritalStatus"><option value="">Select</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option></select></div>
                     <div class="form-group"><label>Spouse Name</label><input type="text" id="memberSpouseName"></div>
+                    <div class="form-group"><label>Date of Wedding</label><input type="text" id="memberDateOfWedding" placeholder="DD/MM/YYYY"></div>
                     <div class="form-group"><label>Child 1</label><input type="text" id="memberChild1"></div>
                     <div class="form-group"><label>Child 2</label><input type="text" id="memberChild2"></div>
                     <div class="form-group"><label>Child 3</label><input type="text" id="memberChild3"></div>
@@ -1326,7 +1328,8 @@
 
     <!-- Scripts -->
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin-app.js"></script>
+    <script src="js/admin-app.js?v=20261003"></script>
+    <script src="js/admin-app-delete.js"></script>
     <script src="js/excel-upload.js"></script>
     <script>
         function switchMenu(section) {
@@ -1382,27 +1385,38 @@
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            // Upload to Cloud Storage
+            const storageRef = firebase.storage().ref();
+            const fileName = 'gallery/' + Date.now() + '_' + file.name;
+            const fileRef = storageRef.child(fileName);
+
+            fileRef.put(file).then(snapshot => {
+                console.log('✅ File uploaded to Cloud Storage');
+                // Get download URL
+                return fileRef.getDownloadURL();
+            }).then(imageUrl => {
                 const photo = {
-                    id: Date.now(),
                     caption: caption,
-                    imageUrl: e.target.result,
+                    imageUrl: imageUrl,
                     uploadedBy: 'Admin',
                     timestamp: new Date().toISOString(),
                     likes: [],
                     comments: []
                 };
 
-                adminGalleryPhotos.unshift(photo);
-                localStorage.setItem('galleryPhotos', JSON.stringify(adminGalleryPhotos));
-
-                closeGalleryUploadForm();
-                loadGalleryPhotos();
-                alert('✅ Photo uploaded successfully!');
-            };
-
-            reader.readAsDataURL(file);
+                // Save metadata to Firestore
+                return db.collection('gallery').add(photo).then(docRef => {
+                    console.log('✅ Photo metadata saved to Firestore:', docRef.id);
+                    adminGalleryPhotos.unshift({...photo, id: docRef.id});
+                    localStorage.setItem('galleryPhotos', JSON.stringify(adminGalleryPhotos));
+                    closeGalleryUploadForm();
+                    loadGalleryPhotos();
+                    alert('✅ Photo uploaded successfully!');
+                });
+            }).catch(error => {
+                console.error('❌ Upload error:', error);
+                alert('❌ Error: ' + error.message);
+            });
         }
 
         function loadGalleryPhotos() {
@@ -1586,14 +1600,15 @@
             document.getElementById('memberGender').value = member.gender || '';
             document.getElementById('memberMaritalStatus').value = member.maritalStatus || '';
             document.getElementById('memberSpouseName').value = member.spouseName || '';
+            document.getElementById('memberDateOfWedding').value = member.dateOfWedding || '';
             document.getElementById('memberChild1').value = member.child1 || '';
             document.getElementById('memberChild2').value = member.child2 || '';
             document.getElementById('memberChild3').value = member.child3 || '';
             document.getElementById('memberChild4').value = member.child4 || '';
-            document.getElementById('memberDateBaptism').value = member.baptismDate || '';
-            document.getElementById('memberDateConfirmation').value = member.dateConfirmation || '';
-            document.getElementById('memberDateJoining').value = member.dateJoining || '';
-            document.getElementById('memberDateLeaving').value = member.dateLeaving || '';
+            document.getElementById('memberDateBaptism').value = member.dateOfBaptism || '';
+            document.getElementById('memberDateConfirmation').value = member.dateOfConfirmation || '';
+            document.getElementById('memberDateJoining').value = member.dateOfJoining || '';
+            document.getElementById('memberDateLeaving').value = member.dateOfLeaving || '';
             document.getElementById('memberStatus').value = member.membershipStatus || '';
             document.getElementById('memberContribution').value = member.monthlyContribution || '';
             document.getElementById('memberRemarks').value = member.remarks || '';
@@ -1620,6 +1635,7 @@
             document.getElementById('memberGender').value = '';
             document.getElementById('memberMaritalStatus').value = '';
             document.getElementById('memberSpouseName').value = '';
+            document.getElementById('memberDateOfWedding').value = '';
             document.getElementById('memberChild1').value = '';
             document.getElementById('memberChild2').value = '';
             document.getElementById('memberChild3').value = '';
@@ -1661,14 +1677,15 @@
                 gender: document.getElementById('memberGender').value,
                 maritalStatus: document.getElementById('memberMaritalStatus').value,
                 spouseName: document.getElementById('memberSpouseName').value,
+                dateOfWedding: document.getElementById('memberDateOfWedding').value,
                 child1: document.getElementById('memberChild1').value,
                 child2: document.getElementById('memberChild2').value,
                 child3: document.getElementById('memberChild3').value,
                 child4: document.getElementById('memberChild4').value,
-                baptismDate: document.getElementById('memberDateBaptism').value,
-                dateConfirmation: document.getElementById('memberDateConfirmation').value,
-                dateJoining: document.getElementById('memberDateJoining').value,
-                dateLeaving: document.getElementById('memberDateLeaving').value,
+                dateOfBaptism: document.getElementById('memberDateBaptism').value,
+                dateOfConfirmation: document.getElementById('memberDateConfirmation').value,
+                dateOfJoining: document.getElementById('memberDateJoining').value,
+                dateOfLeaving: document.getElementById('memberDateLeaving').value,
                 membershipStatus: document.getElementById('memberStatus').value,
                 monthlyContribution: document.getElementById('memberContribution').value,
                 remarks: document.getElementById('memberRemarks').value,

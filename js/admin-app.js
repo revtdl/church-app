@@ -158,10 +158,10 @@ async function loadEvents() {
             const e = doc.data();
             const docId = doc.id;
             html += '<tr>';
-            html += '<td>' + (e.eventName || '') + '</td>';
+            html += '<td>' + (e.title || e.eventName || '') + '</td>';
             html += '<td>' + (e.date || '') + '</td>';
             html += '<td>' + (e.location || '') + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editEvent(\'' + docId + '\')">✏️ Edit</button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3; margin-right: 12px;" onclick="editEvent(\'' + docId + '\')">✏️ Edit</button><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #f44336;" onclick="deleteEvent(\'' + docId + '\')">🗑️ Delete</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -191,7 +191,7 @@ async function loadAnnouncements() {
             html += '<tr>';
             html += '<td>' + (a.title || '') + '</td>';
             html += '<td>' + content + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editAnnouncement(\'' + docId + '\')">✏️ Edit</button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3; margin-right: 12px;" onclick="editAnnouncement(\'' + docId + '\')">✏️ Edit</button><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #f44336;" onclick="deleteAnnouncement(\'' + docId + '\')">🗑️ Delete</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -220,7 +220,7 @@ async function loadSermons() {
             html += '<td>' + (s.title || '') + '</td>';
             html += '<td>' + (s.speaker || '') + '</td>';
             html += '<td>' + (s.sermonDate || '') + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editSermon(\'' + docId + '\')">✏️ Edit</button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3; margin-right: 12px;" onclick="editSermon(\'' + docId + '\')">✏️ Edit</button><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #f44336;" onclick="deleteSermon(\'' + docId + '\')">🗑️ Delete</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -250,7 +250,7 @@ async function loadPrayers() {
             html += '<tr>';
             html += '<td>' + (p.title || '') + '</td>';
             html += '<td>' + content + '</td>';
-            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3;" onclick="editPrayer(\'' + docId + '\')">✏️ Edit</button></td>';
+            html += '<td><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #2196F3; margin-right: 12px;" onclick="editPrayer(\'' + docId + '\')">✏️ Edit</button><button style="background: none; border: none; cursor: pointer; font-size: 16px; color: #f44336;" onclick="deletePrayer(\'' + docId + '\')">🗑️ Delete</button></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -479,6 +479,8 @@ async function editMember(memberId) {
         setField('memberGender', m.gender);
         setField('memberMaritalStatus', m.maritalStatus);
         setField('memberSpouseName', m.spouseName);
+        setField('memberDateOfWedding', m.dateOfWedding);
+        console.log('🔍 DEBUG - dateOfWedding:', m.dateOfWedding, 'Field element:', document.getElementById('memberDateOfWedding'));
         setField('memberChild1', m.child1);
         setField('memberChild2', m.child2);
         setField('memberChild3', m.child3);
@@ -486,6 +488,7 @@ async function editMember(memberId) {
         setField('memberDateBaptism', m.dateOfBaptism);
         setField('memberDateConfirmation', m.dateOfConfirmation);
         setField('memberDateJoining', m.dateOfJoining);
+        console.log('🔍 DEBUG - dateOfJoining:', m.dateOfJoining, 'Field element:', document.getElementById('memberDateJoining'));
         setField('memberDateLeaving', m.dateOfLeaving);
         setField('memberStatus', m.membershipStatus);
         setField('memberContribution', m.monthlyContribution);
@@ -547,18 +550,30 @@ function switchMemberTab(index) {
 async function saveEvent() {
     const name = document.getElementById('eventName').value;
     const date = document.getElementById('eventDate').value;
+    const time = document.getElementById('eventTime')?.value || '';
     const location = document.getElementById('eventLocation').value;
+    const description = document.getElementById('eventDescription')?.value || '';
+
     if (!name || !date) {
         alert('Name and date required');
         return;
     }
     try {
-        await db.collection('events').add({eventName: name, date: date, location: location, createdAt: new Date()});
+        await db.collection('events').add({
+            title: name,
+            date: date,
+            time: time,
+            location: location,
+            description: description,
+            createdAt: new Date()
+        });
         alert('Event saved!');
         closeEventForm();
         document.getElementById('eventName').value = '';
         document.getElementById('eventDate').value = '';
+        if (document.getElementById('eventTime')) document.getElementById('eventTime').value = '';
         document.getElementById('eventLocation').value = '';
+        if (document.getElementById('eventDescription')) document.getElementById('eventDescription').value = '';
         loadEvents();
     } catch(err) {
         alert('Error: ' + err.message);
@@ -650,6 +665,7 @@ async function saveMember() {
             dateOfBirth: document.getElementById('memberDOB').value,
             maritalStatus: document.getElementById('memberMaritalStatus').value,
             spouseName: document.getElementById('memberSpouseName').value,
+            dateOfWedding: document.getElementById('memberDateOfWedding').value,
             child1: document.getElementById('memberChild1').value,
             child2: document.getElementById('memberChild2').value,
             child3: document.getElementById('memberChild3').value,
@@ -694,6 +710,7 @@ function resetMemberForm() {
     document.getElementById('memberDOB').value = '';
     document.getElementById('memberMaritalStatus').value = '';
     document.getElementById('memberSpouseName').value = '';
+    document.getElementById('memberDateOfWedding').value = '';
     document.getElementById('memberChild1').value = '';
     document.getElementById('memberChild2').value = '';
     document.getElementById('memberChild3').value = '';
