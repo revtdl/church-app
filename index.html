@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whitefield Methodist Church</title>
-    <link rel="stylesheet" href="css/mobile.css?v=2026083001">
+    <link rel="stylesheet" href="css/mobile.css?v=2026100303">
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js"></script>
     <script src="js/sheets-sync.js"></script>
     <script src="js/email-auth.js"></script>
-    <script src="js/bible-api.js"></script>
-    <script src="js/mobile-app.js"></script>
+    <script src="js/mobile-app.js?v=20261022"></script>
+    <script src="js/calendar-events.js"></script>
 </head>
 <body>
     <!-- Mobile Login Screen - Email Authentication -->
@@ -143,8 +143,9 @@
 
             <!-- Sermons Screen -->
             <div id="sermons" class="screen">
-                <div style="margin-bottom: 12px;">
-                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                    <button onclick="loadSermonsRealtime()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
                 </div>
                 <div class="section-title">Sermons</div>
                 <div id="sermonsList" class="card">Loading sermons...</div>
@@ -154,10 +155,10 @@
             <div id="events" class="screen">
                 <div style="margin-bottom: 12px; display: flex; gap: 8px;">
                     <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
-                    <button onclick="loadEventsRealtime()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
+                    <button onclick="loadEventsForCalendar()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
                 </div>
-                <div class="section-title">Events</div>
-                <div id="eventsList" style="padding: 0;">Loading events...</div>
+                <div class="section-title">📅 Events Calendar</div>
+                <div id="eventsCalendarContainer" style="padding: 0;">Loading calendar...</div>
             </div>
 
             <!-- Prayers Screen -->
@@ -175,87 +176,98 @@
                 <div style="margin-bottom: 12px;">
                     <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">← Back</button>
                 </div>
-                <div class="section-title">Make an Offering</div>
+                <div class="section-title" style="text-align: center; color: #c41e3a;">💝 Scan & Pay with Joy</div>
 
-                <div class="card" style="margin-bottom: 16px;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 16px;">Your generous offering helps us serve the community and spread God's love.</div>
-
-                    <!-- Offering Amount Selection -->
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Select Amount (₹) or Enter Custom:</label>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                            <button onclick="setOfferingAmount(500)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹500</button>
-                            <button onclick="setOfferingAmount(1000)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹1000</button>
-                            <button onclick="setOfferingAmount(2500)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹2500</button>
-                            <button onclick="setOfferingAmount(5000)" style="flex: 1; min-width: 70px; background: #f0f0f0; border: 2px solid #ddd; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; color: #333;">₹5000</button>
+                <!-- Main Offering Card -->
+                <div class="card" style="margin-bottom: 16px; background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%); border: 2px solid #c41e3a;">
+                    <!-- QR Code Section - Clickable -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: #c41e3a; margin-bottom: 12px; font-size: 14px;">📱 Scan or Click to Pay via UPI</div>
+                        <div id="qrContainer" style="text-align: center; background: white; padding: 16px; border-radius: 8px; display: inline-block; width: 100%; box-sizing: border-box; cursor: pointer; transition: all 0.3s ease;" onclick="initiateUPIPayment()">
+                            <img id="qrCode" src="" alt="UPI QR Code" style="width: 220px; height: 220px; border: 2px solid #ddd; border-radius: 8px; background: white; display: block; margin: 0 auto; transition: transform 0.2s ease;">
                         </div>
-                        <input type="number" id="customAmount" placeholder="Enter custom amount in ₹" step="1" min="0" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        <div style="font-size: 11px; color: #999; margin-top: 8px;">Tap QR to Pay or Scan with Camera</div>
                     </div>
 
-                    <!-- Offering Type -->
+                    <!-- Quick Amount Buttons -->
                     <div style="margin-bottom: 16px;">
-                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Offering Type:</label>
-                        <select id="offeringType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-                            <option value="General">General Offering</option>
-                            <option value="Tithe">Tithe (10%)</option>
-                            <option value="Special">Special Offering</option>
-                            <option value="Building">Building Fund</option>
-                            <option value="Missions">Missions</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-
-                    <!-- Name (Optional) -->
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Name (Optional):</label>
-                        <input type="text" id="offeringName" placeholder="Your name or Anonymous" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-                    </div>
-
-                    <!-- Payment Options Tabs -->
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <button onclick="showPaymentTab('upi')" id="tabUPI" style="flex: 1; background: #1F51B6; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">📱 UPI (0% Fee)</button>
-                        <button onclick="showPaymentTab('razorpay')" id="tabRazorpay" style="flex: 1; background: #f0f0f0; color: #333; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">💳 Razorpay</button>
-                    </div>
-
-                    <!-- UPI Payment Tab -->
-                    <div id="upiTab" style="display: block;">
-                        <div style="background: #f0f8ff; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">📌 Scan to donate via UPI (0% charges)</div>
-                            <div style="text-align: center; background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                                <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 6px; margin: 0 auto; color: #999; font-size: 12px; text-align: center;">
-                                    <div>📱 UPI QR Code<br><small>(To add QR code: upload upi-qr-code.png to project folder)</small></div>
-                                </div>
-                            </div>
-                            <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center;">
-                                <div style="font-size: 12px; color: #666; margin-bottom: 6px;">UPI ID:</div>
-                                <div id="upiId" style="font-weight: 600; color: #1F51B6; font-size: 14px; word-break: break-all;">whitefieldchurch@hdfc</div>
-                                <button onclick="copyUPIId()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; margin-top: 8px; font-weight: 600; font-size: 12px;">📋 Copy UPI ID</button>
-                            </div>
-                            <button onclick="initiateUPIPayment()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">🔗 Open UPI App</button>
+                        <div style="font-weight: 600; color: #333; margin-bottom: 10px; font-size: 12px;">💰 Quick Pay</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
+                            <button onclick="initiateUPIPaymentWithAmount(100)" style="background: white; border: 2px solid #c41e3a; color: #c41e3a; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">₹100</button>
+                            <button onclick="initiateUPIPaymentWithAmount(250)" style="background: white; border: 2px solid #c41e3a; color: #c41e3a; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">₹250</button>
+                            <button onclick="initiateUPIPaymentWithAmount(500)" style="background: white; border: 2px solid #c41e3a; color: #c41e3a; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">₹500</button>
+                            <button onclick="initiateUPIPaymentWithAmount(1000)" style="background: white; border: 2px solid #c41e3a; color: #c41e3a; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">₹1000</button>
                         </div>
-                        <div id="upiStatus" style="text-align: center; font-size: 12px; color: #666; margin-bottom: 12px; display: none;"></div>
                     </div>
 
-                    <!-- Razorpay Payment Tab -->
-                    <div id="razorpayTab" style="display: none;">
-                        <button onclick="initiateRazorpayPayment()" style="width: 100%; background: #1F51B6; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; margin-bottom: 12px;">🔒 Pay with Razorpay</button>
+                    <!-- Custom Amount Section -->
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #ddd;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: 600;">Custom Amount</div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="number" id="customAmount" placeholder="Enter amount" min="1" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;" onkeypress="if(event.key==='Enter') initiateUPIPaymentCustom()">
+                            <button onclick="initiateUPIPaymentCustom()" style="background: #c41e3a; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap;">💳 Pay</button>
+                        </div>
                     </div>
 
-                    <!-- Manual Submission Button -->
-                    <button onclick="submitOfferingManual()" style="width: 100%; background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px;">📝 Record Offering (Manual)</button>
+                    <!-- UPI ID & Copy Button -->
+                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 16px; text-align: center; border: 1px solid #ddd;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 6px;">UPI ID</div>
+                        <div id="upiId" style="font-weight: 700; color: #c41e3a; font-size: 16px; letter-spacing: 0.5px; margin-bottom: 10px;">qr.wmchurch@sib</div>
+                        <button onclick="copyUPIId()" style="width: 100%; background: #c41e3a; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">📋 Copy UPI ID</button>
+                    </div>
 
-                    <div id="offeringStatus" style="margin-top: 12px; text-align: center; font-size: 14px; color: #666; display: none;"></div>
+                    <!-- WhatsApp Instruction Box -->
+                    <div style="background: #e8f5e9; border-left: 4px solid #4CAF50; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 12px; color: #333;">
+                        <div style="font-weight: 600; margin-bottom: 6px;">✅ After Paying</div>
+                        <div style="line-height: 1.5;">Text your <strong>name</strong> & <strong>offering reason</strong> to the Treasurer:</div>
+                        <div style="background: white; padding: 8px; border-radius: 4px; margin-top: 8px; font-weight: 600; color: #4CAF50;">
+                            📱 WhatsApp: <a href="https://wa.me/919986334250" style="color: #4CAF50; text-decoration: none; cursor: pointer;">+91 99863 34250</a>
+                        </div>
+                    </div>
+
+                    <!-- Bible Verse -->
+                    <div style="background: #fce4ec; border-left: 4px solid #c41e3a; padding: 12px; border-radius: 4px; font-size: 12px; color: #333; line-height: 1.6;">
+                        <div style="font-style: italic; color: #666; margin-bottom: 6px;">"Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."</div>
+                        <div style="font-weight: 600; text-align: right; color: #c41e3a;">— 2 Corinthians 9:7</div>
+                    </div>
                 </div>
 
-                <!-- Payment Info -->
-                <div class="card" style="background: #f9f9f9; border-left: 4px solid #1F51B6;">
-                    <div style="font-size: 12px; color: #666; line-height: 1.6;">
-                        <div style="font-weight: 600; margin-bottom: 8px;">💳 Payment Methods Available:</div>
-                        <div>✓ UPI (Google Pay, PhonePe, Paytm)</div>
-                        <div>✓ Debit/Credit Cards</div>
-                        <div>✓ Net Banking</div>
-                        <div>✓ Digital Wallets</div>
+                <!-- Payment Methods Info -->
+                <div class="card" style="background: #f9f9f9; border-left: 4px solid #c41e3a; margin-bottom: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #333; font-size: 13px;">💳 Accepted Payment Methods</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: #666;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>Google Pay</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>PhonePe</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>Paytm</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>Amazon Pay</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>MobiKwik</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #4CAF50; font-weight: 600;">✓</span>
+                            <span>All Banks</span>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Bank Info -->
+                <div class="card" style="background: #f5f5f5; border: 1px solid #ddd; text-align: center; font-size: 12px; color: #666;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">🏦 Bank Details</div>
+                    <div>South Indian Bank</div>
+                    <div style="font-weight: 600; color: #c41e3a; margin-top: 6px;">UPI: qr.wmchurch@sib</div>
                 </div>
             </div>
 
@@ -299,74 +311,16 @@
                     <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
                 </div>
 
-                <!-- Bible Card -->
-                <div onclick="showScreen('bible')" style="background: white; border: 2px solid #667eea; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 32px;">📖</div>
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Bible</div></div>
-                </div>
-
                 <!-- Songs Card -->
                 <div onclick="showScreen('songbooks')" style="background: white; border: 2px solid #FF69B4; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
                     <div style="font-size: 32px;">🎵</div>
                     <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Songs</div></div>
                 </div>
 
-                <!-- Offering Button -->
-                <div onclick="showScreen('offering')" style="background: #4CAF50; color: white; border-radius: 12px; padding: 16px; text-align: center; font-weight: bold; cursor: pointer; font-size: 16px;">💰 OFFERING</div>
-            </div>
-
-            <!-- Bible Screen -->
-            <div id="bible" class="screen">
-                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
-                </div>
-                <div class="section-title">📖 Bible</div>
-                <div style="margin-bottom: 16px; display: flex; gap: 10px;">
-                    <select id="bibleLanguage" onchange="currentBibleLanguage = this.value; loadBibleBooks();" style="flex: 0 0 40%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-                        <option value="English">English</option>
-                        <option value="Tamil">Tamil</option>
-                        <option value="Hindi">Hindi</option>
-                        <option value="Kannada">Kannada</option>
-                    </select>
-                    <input type="text" id="bibleSearch" placeholder="Search books..." oninput="filterBibleBooks()" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-                </div>
-                <div id="bibleBooksList" style="display: grid; grid-template-columns: 1fr; gap: 10px;"></div>
-            </div>
-
-            <!-- Bible Reader Screen -->
-            <div id="bibleReader" class="screen">
-                <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; justify-content: space-between;">
-                    <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">← Back</button>
-                    <div>
-                        <div id="readerBookTitle" style="font-weight: 600; color: #333; font-size: 16px;">Bible</div>
-                        <div id="readerChapterTitle" style="font-size: 12px; color: #666;">Chapter 1</div>
-                    </div>
-                    <button id="bookmarkBtn" onclick="toggleBookmark()" style="background: #FF9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">🔖</button>
-                </div>
-
-                <!-- Bible Options -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
-                    <select id="bibleTheme" onchange="changeBibleTheme(this.value)" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; flex: 1;">
-                        <option value="white" selected>White Theme</option>
-                        <option value="blue">Blue Theme</option>
-                        <option value="dark">Dark Theme</option>
-                        <option value="sepia">Sepia Theme</option>
-                    </select>
-                    <select id="bibleFontSize" onchange="changeBibleFontSize(this.value)" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; flex: 1;">
-                        <option value="small">Small</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="large">Large</option>
-                        <option value="xlarge">Extra Large</option>
-                    </select>
-                </div>
-
-                <div id="chapterButtons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; overflow-y: auto; max-height: 100px;">
-                    <!-- Chapter buttons will be inserted here -->
-                </div>
-
-                <div id="bibleContent" style="background: white; color: #333; padding: 20px; border-radius: 12px; margin-bottom: 16px; text-align: left; border: 1px solid #ddd;">
-                    <div id="verseReference" style="font-size: 12px; opacity: 0.7; margin-bottom: 10px; text-align: left; color: #666;"></div>
-                    <div id="verseList" style="font-size: 14px; line-height: 1.8; text-align: left !important;"></div>
+                <!-- Offering Card -->
+                <div onclick="showScreen('offering')" style="background: linear-gradient(135deg, #c41e3a 0%, #e8493f 100%); color: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;">💝</div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: white;">Scan & Pay with Joy</div></div>
                 </div>
             </div>
 

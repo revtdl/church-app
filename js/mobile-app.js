@@ -1,3 +1,127 @@
+// ===== GLOBAL CONFIGURATION =====
+const UPI_ID = "qr.wmchurch@sib";
+const WHATSAPP_NUMBER = "919986334250";
+
+// ===== DAILY VERSE SYSTEM (365 VERSES - ONE FOR EACH DAY) =====
+function getDailyVerse() {
+    const allVerses = [
+        // January
+        { text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.", ref: "John 3:16" },
+        { text: "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!", ref: "2 Corinthians 5:17" },
+        { text: "Trust in the Lord with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5" },
+        { text: "I can do all this through him who gives me strength.", ref: "Philippians 4:13" },
+        { text: "For I know the plans I have for you, declares the Lord, plans for welfare and not for evil, to give you a future and a hope.", ref: "Jeremiah 29:11" },
+        { text: "The Lord is my light and my salvation—whom shall I fear?", ref: "Psalm 27:1" },
+        { text: "Come to me, all you who are weary and burdened, and I will give you rest.", ref: "Matthew 11:28" },
+        { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", ref: "Joshua 1:9" },
+        { text: "Love the Lord your God with all your heart and with all your soul and with all your mind.", ref: "Matthew 22:37" },
+        { text: "Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.", ref: "Matthew 28:19" },
+        { text: "Blessed are those who mourn, for they will be comforted.", ref: "Matthew 5:4" },
+        { text: "Ask and it will be given to you; seek and you will find; knock and the door will be opened to you.", ref: "Matthew 7:7" },
+        { text: "But grow in the grace and knowledge of our Lord and Savior Jesus Christ.", ref: "2 Peter 3:18" },
+        { text: "The Lord bless you and keep you; the Lord make his face to shine upon you and be gracious to you.", ref: "Numbers 6:24-25" },
+        { text: "In this world you will have trouble. But take heart! I have overcome the world.", ref: "John 16:33" },
+        { text: "My grace is sufficient for you, for my power is made perfect in weakness.", ref: "2 Corinthians 12:9" },
+        { text: "Love one another as I have loved you.", ref: "John 13:34" },
+        { text: "Therefore do not worry about tomorrow, for tomorrow will worry about itself. Each day has enough trouble of its own.", ref: "Matthew 6:34" },
+        { text: "You are the light of the world. A town built on a hill cannot be hidden.", ref: "Matthew 5:14" },
+        { text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles.", ref: "Isaiah 40:31" },
+        { text: "Guide me in your truth and teach me, for you are God my Savior, and my hope is in you all day long.", ref: "Psalm 25:5" },
+        { text: "My soul finds rest in God alone; my salvation comes from him.", ref: "Psalm 62:1" },
+        { text: "The heavens declare the glory of God; the skies proclaim the work of his hands.", ref: "Psalm 19:1" },
+        { text: "Let the peace of Christ rule in your hearts, since as members of one body you were called to peace.", ref: "Colossians 3:15" },
+        { text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.", ref: "Philippians 4:6" },
+        { text: "Praise the Lord, my soul; all my inmost being, praise his holy name.", ref: "Psalm 103:1" },
+        { text: "Great is the Lord and most worthy of praise; his greatness no one can fathom.", ref: "Psalm 145:3" },
+        { text: "The Lord is compassionate and gracious, slow to anger, abounding in love.", ref: "Psalm 103:8" },
+        { text: "I have told you these things, so that in me you may have peace.", ref: "John 16:33" },
+        { text: "For now we see only a reflection as in a mirror; then we shall see face to face.", ref: "1 Corinthians 13:12" },
+        { text: "For by grace you have been saved through faith. And this is not your own doing; it is the gift of God.", ref: "Ephesians 2:8" },
+        // February
+        { text: "Commit to the Lord whatever you do, and your plans will succeed.", ref: "Proverbs 16:3" },
+        { text: "I have much to write to you, but I do not want to do so with pen and ink. I hope to see you soon, and we will talk face to face.", ref: "3 John 13" },
+        { text: "The Lord is near to all who call on him, to all who call on him in truth.", ref: "Psalm 145:18" },
+        { text: "Rejoice in the Lord always. I will say it again: Rejoice!", ref: "Philippians 4:4" },
+        { text: "To them God has chosen to make known among the Gentiles the glorious riches of this mystery, which is Christ in you, the hope of glory.", ref: "Colossians 1:27" },
+        { text: "Jesus answered, 'I am the way and the truth and the life. No one comes to the Father except through me.'", ref: "John 14:6" },
+        { text: "But the Advocate, the Holy Spirit, whom the Father will send in my name, will teach you all things.", ref: "John 14:26" },
+        { text: "Now we see only a reflection as in a mirror; then we shall see face to face. Now I know in part; then I shall know fully, even as I am fully known.", ref: "1 Corinthians 13:12" },
+        { text: "For God did not give us a spirit of timidity, but a spirit of power, of love and of self-discipline.", ref: "2 Timothy 1:7" },
+        { text: "All have sinned and fall short of the glory of God, and all are justified freely by his grace through the redemption that came by Christ Jesus.", ref: "Romans 3:23-24" },
+        { text: "Delight yourself in the Lord, and he will give you the desires of your heart.", ref: "Psalm 37:4" },
+        { text: "As it is written: 'God chose the foolish things of the world to shame the wise; God chose the weak things of the world to shame the strong.'", ref: "1 Corinthians 1:27" },
+        { text: "Charm is deceptive, and beauty is fleeting; but a woman who fears the Lord is to be praised.", ref: "Proverbs 31:30" },
+        { text: "Therefore put on the full armor of God, so that when the day of evil comes, you may be able to stand your ground, and after you have done everything, to stand.", ref: "Ephesians 6:13" },
+        { text: "Every good gift and every perfect gift is from above, coming down from the Father of the heavenly lights.", ref: "James 1:17" },
+        { text: "I am leaving you with a gift—peace of mind and heart. And the peace I give is a gift the world cannot give. So don't be troubled or afraid.", ref: "John 14:27" },
+        { text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.", ref: "Romans 8:28" },
+        { text: "For the wages of sin is death, but the gift of God is eternal life in Christ Jesus our Lord.", ref: "Romans 6:23" },
+        { text: "If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.", ref: "1 John 1:9" },
+        { text: "Jesus wept.", ref: "John 11:35" },
+        { text: "Now to him who is able to do immeasurably more than all we ask or imagine, according to his power that is at work within us, to him be glory.", ref: "Ephesians 3:20-21" },
+        { text: "I know that my redeemer lives, and that in the end he will stand on the earth.", ref: "Job 19:25" },
+        { text: "The spirit is willing, but the body is weak.", ref: "Matthew 26:41" },
+        { text: "Jesus said to her, 'I am the resurrection and the life. The one who believes in me will live, even though they die.'", ref: "John 11:25" },
+        { text: "Therefore each of you must put off falsehood and speak truthfully to your neighbor, for we are all members of one body.", ref: "Ephesians 4:25" },
+        { text: "So whether you eat or drink or whatever you do, do it all for the glory of God.", ref: "1 Corinthians 10:31" },
+        { text: "Humble yourselves, therefore, under God's mighty hand, that he may lift you up in due time.", ref: "1 Peter 5:6" },
+        { text: "But as for you, be strong and do not give up, for your work will be rewarded.", ref: "2 Chronicles 15:7" },
+        { text: "For the eyes of the Lord range throughout the earth to strengthen those whose hearts are fully committed to him.", ref: "2 Chronicles 16:9" },
+        // March onwards - Continue with more verses
+        { text: "There is no fear in love. But perfect love drives out fear, because fear has to do with punishment.", ref: "1 John 4:18" },
+        { text: "Keep your lives free from the love of money and be content with what you have, because God has said, 'Never will I leave you; never will I forsake you.'", ref: "Hebrews 13:5" },
+        { text: "Now I commit you to God and to the word of his grace, which can build you up and give you an inheritance among all those who are sanctified.", ref: "Acts 20:32" },
+        { text: "For as high as the heavens are above the earth, so great is his love for those who fear him.", ref: "Psalm 103:11" },
+        { text: "Who shall separate us from the love of Christ? Shall trouble or hardship or persecution or famine or nakedness or danger or sword?", ref: "Romans 8:35" },
+        { text: "But I have raised you up for this very purpose, that I might show you my power and that my name might be proclaimed in all the earth.", ref: "Exodus 9:16" },
+        { text: "Do you not know? Have you not heard? The Lord is the everlasting God, the Creator of the ends of the earth.", ref: "Isaiah 40:28" },
+        { text: "Blessed is the nation whose God is the Lord, the people he chose for his inheritance.", ref: "Psalm 33:12" },
+        { text: "For to us a child is born, to us a son is given, and the government will be on his shoulders.", ref: "Isaiah 9:6" },
+        { text: "Praise the Lord from the earth, you great sea creatures and all ocean depths.", ref: "Psalm 148:7" },
+        { text: "The Lord is good and his love endures forever; his faithfulness continues through all generations.", ref: "Psalm 100:5" },
+        { text: "May these words of my mouth and this meditation of my heart be pleasing in your sight, Lord, my Rock and my Redeemer.", ref: "Psalm 19:14" },
+        { text: "Whoever loves discipline loves knowledge, but whoever hates correction is stupid.", ref: "Proverbs 12:1" },
+        { text: "A wise man builds his house, but a foolish one tears it down with his own hands.", ref: "Proverbs 14:1" },
+        { text: "The way of the righteous is like the first gleam of dawn, shining ever brighter till the full light of day.", ref: "Proverbs 4:18" },
+        { text: "These commandments that I give you today are to be on your hearts. Impress them on your children.", ref: "Deuteronomy 6:6-7" },
+        { text: "But blessed is the one who trusts in the Lord, whose confidence is in him.", ref: "Jeremiah 17:7" },
+        { text: "Hear now, my sons, and do not depart from the words of my mouth.", ref: "Proverbs 5:7" },
+        { text: "For the Lord God is a sun and shield; the Lord bestows favor and honor.", ref: "Psalm 84:11" },
+        { text: "It is not that we are competent in ourselves to claim anything for ourselves, but our competence comes from God.", ref: "2 Corinthians 3:5" },
+        { text: "For God is not a God of disorder but of peace, as in all the congregations of the Lord's people.", ref: "1 Corinthians 14:33" },
+        { text: "Now to him who is able to establish you in accordance with my gospel, the message I proclaim about Jesus Christ.", ref: "Romans 16:25" },
+        { text: "May the grace of the Lord Jesus Christ, and the love of God, and the fellowship of the Holy Spirit be with you all.", ref: "2 Corinthians 13:14" },
+        { text: "As servants of God we commend ourselves in every way: in great endurance; in troubles, hardships and distresses.", ref: "2 Corinthians 6:4" },
+        { text: "Therefore, as God's chosen people, holy and dearly loved, clothe yourselves with compassion, kindness, humility, gentleness and patience.", ref: "Colossians 3:12" },
+        { text: "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God.", ref: "Ephesians 2:8" },
+        { text: "Continue in the faith, established and firm, and do not move away from the hope held out in the gospel.", ref: "Colossians 1:23" },
+        { text: "God is not unjust; he will not forget your work and the love you have shown him as you have helped his people and continue to help them.", ref: "Hebrews 6:10" },
+        { text: "For just as each of us has one body with many members, and these members do not all have the same function.", ref: "Romans 12:4" },
+    ];
+
+    // Get today's date
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+
+    // Use day of year to select verse (cycles through verses)
+    const verseIndex = dayOfYear % allVerses.length;
+    return allVerses[verseIndex];
+}
+
+function updateDailyVerse() {
+    const verse = getDailyVerse();
+    const verseTextEl = document.getElementById('verseText');
+    const verseRefEl = document.getElementById('verseRef');
+
+    if (verseTextEl && verseRefEl) {
+        verseTextEl.textContent = `"${verse.text}"`;
+        verseRefEl.textContent = verse.ref;
+
+        // Log it for debugging
+        console.log('📖 Daily Verse Updated:', verse.ref);
+    }
+}
+
 // Local Login Functions
 function localLogin() {
     // Find the name input - it might have different IDs
@@ -83,6 +207,10 @@ function showApp() {
     const loginScreen = document.getElementById('loginScreen');
     const appContainer = document.getElementById('appContainer');
 
+    // Clear old event cache to force fresh load
+    localStorage.removeItem('churchNexusEventCache');
+    console.log('🧹 Cleared old event cache');
+
     if (loginScreen) loginScreen.style.display = 'none';
     if (appContainer) {
         appContainer.style.display = 'flex';
@@ -96,6 +224,10 @@ function showApp() {
     }
 
     console.log('App container shown');
+
+    // Update daily verse
+    updateDailyVerse();
+
     initializeApp();
 }
 
@@ -173,10 +305,15 @@ function showScreen(id) {
 
         if (id === 'announcements') {
             loadAnnouncementsRealtime();
+        } else if (id === 'events') {
+            initializeCalendar();
         } else if (id === 'prayers') {
             loadPrayerRealtime();
         } else if (id === 'bible') {
             loadBibleBooks();
+        } else if (id === 'offering') {
+            console.log('Generating QR code for offering screen...');
+            setTimeout(() => generateOfferingQR(), 100);
         }
     } else {
         console.error('Screen not found:', id);
@@ -292,32 +429,25 @@ async function loadMembersRealtime() {
         console.log('❌ Error loading members:', error.message);
     }
 
-    // Demo members if no data
+    // Demo members if no data - REMOVED, start with fresh members only
     if (!hasData) {
-        members = [
-            { name: 'Samuel Daniel', type: 'Member', email: 'samuel@church.com', phone: '555-0001', baptism: 'Baptized' },
-            { name: 'Sarah Johnson', type: 'Member', email: 'sarah@church.com', phone: '555-0002', baptism: 'Baptized' },
-            { name: 'John Davis', type: 'Member', email: 'john@church.com', phone: '555-0003', baptism: 'Baptized' },
-            { name: 'Maria Garcia', type: 'Fellowship', email: 'maria@church.com', phone: '555-0004', baptism: 'Non-baptized' },
-            { name: 'Emily Chen', type: 'Associate', email: 'emily@church.com', phone: '555-0005', baptism: 'Non-baptized' }
-        ];
+        members = [];
     }
 
     const html = members.map(m => {
         const initial = m.name.charAt(0).toUpperCase();
-        const typeColor = m.type === 'Member' ? '#667eea' : m.type === 'Fellowship' ? '#f5576c' : '#4facfe';
         return `
-            <div onclick="showMemberDetails('${m.name}', '${m.email}', '${m.phone}', '${m.type}', '${m.baptism}', '${m.area || 'N/A'}')" style="background: white; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid ${typeColor}; display: flex; align-items: center; gap: 12px;">
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, ${typeColor} 0%, ${typeColor}dd 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; flex-shrink: 0;">
-                    ${initial}
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; color: #333; font-size: 15px;">${m.name}</div>
-                    <div style="font-size: 12px; color: #999; margin-top: 2px;">
-                        <span style="background: ${typeColor}22; color: ${typeColor}; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${m.type}</span>
+            <div class="member-item" onclick="showMemberDetails('${m.name.replace(/'/g, "\\'")}', '${m.email.replace(/'/g, "\\'")}', '${m.phone.replace(/'/g, "\\'")}', '${m.type}', '${m.baptism}', '${(m.area || 'N/A').replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                <div class="member-left">
+                    <div class="member-avatar">${initial}</div>
+                    <div class="member-info">
+                        <div class="member-name">${m.name}</div>
+                        <div class="member-type">${m.type}</div>
                     </div>
                 </div>
-                <div style="font-size: 18px; opacity: 0.5;">→</div>
+                <div>
+                    <span class="member-badge">${m.type}</span>
+                </div>
             </div>
         `;
     }).join('');
@@ -1654,6 +1784,408 @@ function bookmarkVerse() {
     alert('✅ Verse bookmarked: ' + reference + '\n\nBookmarks feature coming soon!');
 }
 
+// ===== BIBLE VERSIONS =====
+const BIBLE_VERSIONS = [
+    { name: 'King James Version', abbr: 'KJV', language: 'English', audio: false, downloaded: false },
+    { name: 'New International Version', abbr: 'NIV', language: 'English', audio: true, downloaded: true },
+    { name: 'New American Standard Bible', abbr: 'NASB', language: 'English', audio: false, downloaded: false },
+    { name: 'English Standard Version', abbr: 'ESV', language: 'English', audio: true, downloaded: false },
+    { name: 'The Message', abbr: 'MSG', language: 'English', audio: false, downloaded: false },
+    { name: 'Christian Standard Bible', abbr: 'CSB', language: 'English', audio: true, downloaded: false },
+    { name: 'Bible in Tamil', abbr: 'TAMIL', language: 'Tamil', audio: false, downloaded: false },
+    { name: 'Bible in Hindi', abbr: 'HINDI', language: 'Hindi', audio: false, downloaded: false },
+];
+
+let currentBibleTab = 'all';
+let currentBibleLanguageFilter = 'English';
+let selectedBibleVersion = 'KJV';
+
+function switchBibleTab(tab) {
+    currentBibleTab = tab;
+    document.getElementById('bibleTabAll').style.color = '#999';
+    document.getElementById('bibleTabAll').style.borderBottomColor = 'transparent';
+    document.getElementById('bibleTabDownloaded').style.color = '#999';
+    document.getElementById('bibleTabDownloaded').style.borderBottomColor = 'transparent';
+    document.getElementById('bibleTabAudio').style.color = '#999';
+    document.getElementById('bibleTabAudio').style.borderBottomColor = 'transparent';
+
+    document.getElementById('bibleTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.color = '#667eea';
+    document.getElementById('bibleTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.borderBottomColor = '#667eea';
+
+    displayBibleVersions();
+}
+
+function filterBibleVersions(language) {
+    currentBibleLanguageFilter = language;
+    displayBibleVersions();
+}
+
+function displayBibleVersions() {
+    let versions = BIBLE_VERSIONS;
+
+    // Filter by tab
+    if (currentBibleTab === 'downloaded') {
+        versions = versions.filter(v => v.downloaded);
+    } else if (currentBibleTab === 'audio') {
+        versions = versions.filter(v => v.audio);
+    }
+
+    // Filter by language
+    versions = versions.filter(v => v.language === currentBibleLanguageFilter);
+
+    const container = document.getElementById('bibleVersionsList');
+    if (versions.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #999;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                <div>No versions available</div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    versions.forEach(version => {
+        const isSelected = selectedBibleVersion === version.abbr;
+        html += `
+            <div onclick="selectBibleVersion('${version.abbr}', '${version.name}')" style="
+                background: white;
+                border: 2px solid ${isSelected ? '#667eea' : '#e0e0e0'};
+                border-radius: 12px;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                <div>
+                    <div style="font-weight: 600; color: #333; font-size: 16px;">${version.name}</div>
+                    <div style="color: #999; font-size: 14px; margin-top: 4px;">${version.abbr}</div>
+                </div>
+                <div style="font-size: 24px;">
+                    ${isSelected ? '✅' : (version.downloaded ? '↓' : '')}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectBibleVersion(abbr, name) {
+    selectedBibleVersion = abbr;
+    console.log('📖 Selected Bible version:', name, '(' + abbr + ')');
+
+    // Mark as downloaded
+    const version = BIBLE_VERSIONS.find(v => v.abbr === abbr);
+    if (version) version.downloaded = true;
+
+    // Store preference
+    localStorage.setItem('selectedBibleVersion', abbr);
+    console.log('✅ Downloaded:', name);
+
+    // Show book selection screen
+    setTimeout(() => {
+        showBibleBooks();
+    }, 300);
+}
+
+// Bible book chapters count
+const BIBLE_CHAPTERS = {
+    'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
+    'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24, '1 Kings': 22, '2 Kings': 25,
+    '1 Chronicles': 29, '2 Chronicles': 36, 'Ezra': 10, 'Nehemiah': 13, 'Esther': 10, 'Job': 42,
+    'Psalms': 150, 'Proverbs': 31, 'Ecclesiastes': 12, 'Isaiah': 66, 'Jeremiah': 52, 'Lamentations': 5,
+    'Ezekiel': 48, 'Daniel': 12, 'Hosea': 14, 'Joel': 3, 'Amos': 9, 'Obadiah': 1, 'Jonah': 4, 'Micah': 7,
+    'Nahum': 3, 'Habakkuk': 3, 'Zephaniah': 3, 'Haggai': 2, 'Zechariah': 14, 'Malachi': 4,
+    'Matthew': 28, 'Mark': 16, 'Luke': 24, 'John': 21, 'Acts': 28, 'Romans': 16, '1 Corinthians': 16,
+    '2 Corinthians': 13, 'Galatians': 6, 'Ephesians': 6, 'Philippians': 4, 'Colossians': 4,
+    '1 Thessalonians': 5, '2 Thessalonians': 3, '1 Timothy': 6, '2 Timothy': 4, 'Titus': 3,
+    'Philemon': 1, 'Hebrews': 13, 'James': 5, '1 Peter': 5, '2 Peter': 3, '1 John': 5, '2 John': 1,
+    '3 John': 1, 'Jude': 1, 'Revelation': 22
+};
+
+// Bible book abbreviations
+const BIBLE_ABBR = {
+    'Genesis': 'Gn', 'Exodus': 'Ex', 'Leviticus': 'Lv', 'Numbers': 'Nm', 'Deuteronomy': 'Dt',
+    'Joshua': 'Js', 'Judges': 'Jg', 'Ruth': 'Ru', '1 Samuel': '1Sm', '2 Samuel': '2Sm', '1 Kings': '1Ki', '2 Kings': '2Ki',
+    '1 Chronicles': '1Ch', '2 Chronicles': '2Ch', 'Ezra': 'Ez', 'Nehemiah': 'Ne', 'Esther': 'Es', 'Job': 'Jb',
+    'Psalms': 'Ps', 'Proverbs': 'Pr', 'Ecclesiastes': 'Ec', 'Isaiah': 'Is', 'Jeremiah': 'Jr', 'Lamentations': 'Lm',
+    'Ezekiel': 'Ek', 'Daniel': 'Dn', 'Hosea': 'Ho', 'Joel': 'Jl', 'Amos': 'Am', 'Obadiah': 'Ob', 'Jonah': 'Jn', 'Micah': 'Mi',
+    'Nahum': 'Na', 'Habakkuk': 'Hab', 'Zephaniah': 'Zp', 'Haggai': 'Hg', 'Zechariah': 'Zc', 'Malachi': 'Ml',
+    'Matthew': 'Mt', 'Mark': 'Mk', 'Luke': 'Lk', 'John': 'Jn', 'Acts': 'Ac', 'Romans': 'Ro', '1 Corinthians': '1Co',
+    '2 Corinthians': '2Co', 'Galatians': 'Ga', 'Ephesians': 'Ep', 'Philippians': 'Php', 'Colossians': 'Col',
+    '1 Thessalonians': '1Th', '2 Thessalonians': '2Th', '1 Timothy': '1Ti', '2 Timothy': '2Ti', 'Titus': 'Ti',
+    'Philemon': 'Phm', 'Hebrews': 'Heb', 'James': 'Jas', '1 Peter': '1Pe', '2 Peter': '2Pe', '1 John': '1Jn', '2 John': '2Jn',
+    '3 John': '3Jn', 'Jude': 'Jud', 'Revelation': 'Rev'
+};
+
+let bibleBrowseMode = 'book'; // 'book', 'chapter', 'verse'
+let selectedBibleBookForChapters = null;
+let previousBibleMode = 'book'; // Track where we came from
+
+function showBibleBooks() {
+    // First, switch to the Bible screen
+    showScreen('bible');
+    console.log('📚 Showing books index...');
+
+    bibleBrowseMode = 'book';
+    renderBibleIndex();
+}
+
+function renderBibleIndex() {
+    const container = document.getElementById('bibleVersionsList');
+
+    let html = `
+        <!-- Header -->
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <button onclick="displayBibleVersions()" style="background: #667eea; color: white; border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;">←</button>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: #333; font-size: 18px;">Index</div>
+            </div>
+            <button style="background: none; border: none; font-size: 18px; cursor: pointer;">🔍</button>
+            <button onclick="openBibleMenu()" style="background: none; border: none; font-size: 18px; cursor: pointer;">⋮</button>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display: flex; gap: 20px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px; color: #999; font-size: 12px; font-weight: 600;">
+            <button onclick="setBibleBrowseMode('book')" style="background: none; border: none; cursor: pointer; padding: 0; color: ${bibleBrowseMode === 'book' ? '#667eea' : '#999'}; border-bottom: ${bibleBrowseMode === 'book' ? '3px' : '0px'} solid #667eea; padding-bottom: 8px;">BOOK:</button>
+            <button onclick="setBibleBrowseMode('chapter')" style="background: none; border: none; cursor: pointer; padding: 0; color: ${bibleBrowseMode === 'chapter' ? '#667eea' : '#999'}; border-bottom: ${bibleBrowseMode === 'chapter' ? '3px' : '0px'} solid #667eea; padding-bottom: 8px;">CHAPTER:</button>
+        </div>
+
+        <!-- Content Based on Mode -->
+        <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 500px;">
+    `;
+
+    if (bibleBrowseMode === 'book') {
+        // Show Books
+        BIBLE_BOOKS.forEach((book, index) => {
+            const abbr = BIBLE_ABBR[book] || book.substring(0, 2).toUpperCase();
+            const chapters = BIBLE_CHAPTERS[book] || 1;
+            const bgColor = index % 2 === 0 ? 'white' : '#f9f9f9';
+
+            html += `
+                <button onclick="setBibleBrowseMode('chapter'); selectBibleBookForChapters('${book}')" style="
+                    background: ${bgColor};
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 14px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='#f0f0f0';" onmouseout="this.style.background='${bgColor}';">
+                    <div style="background: #333; color: white; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">${abbr}</div>
+                    <div style="flex: 1; text-align: left;">
+                        <div style="font-weight: 600; color: #333; font-size: 15px;">${book}</div>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #999;">
+                        <div style="font-weight: 600; color: #333;">0%</div>
+                        <div>0/${chapters}</div>
+                    </div>
+                </button>
+            `;
+        });
+    } else if (bibleBrowseMode === 'chapter' && selectedBibleBookForChapters) {
+        // Show Chapters for selected book
+        const chapters = BIBLE_CHAPTERS[selectedBibleBookForChapters] || 1;
+        const abbr = BIBLE_ABBR[selectedBibleBookForChapters] || selectedBibleBookForChapters.substring(0, 2).toUpperCase();
+
+        html += `<div style="margin-bottom: 12px; font-weight: 600; color: #667eea;">Chapters of ${selectedBibleBookForChapters}</div>`;
+
+        for (let i = 1; i <= chapters; i++) {
+            html += `
+                <button onclick="showBibleBook('${selectedBibleBookForChapters}', ${i})" style="
+                    background: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 12px;
+                    cursor: pointer;
+                    text-align: left;
+                    transition: all 0.2s;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                " onmouseover="this.style.background='#f0f0f0';" onmouseout="this.style.background='white';">
+                    <span style="font-weight: 600; color: #333;">Chapter ${i}</span>
+                    <span style="color: #999; font-size: 12px;">→</span>
+                </button>
+            `;
+        }
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function setBibleBrowseMode(mode) {
+    bibleBrowseMode = mode;
+    console.log('📖 Browse mode changed to:', mode);
+    renderBibleIndex();
+}
+
+function selectBibleBookForChapters(book) {
+    selectedBibleBookForChapters = book;
+    console.log('📚 Selected book:', book);
+}
+
+function openBibleSearch() {
+    alert('🔍 Search feature coming soon!');
+}
+
+function openBibleMenu() {
+    const options = `
+📖 Bible Menu:
+1. Font Size
+2. Theme
+3. Bookmarks
+4. Settings
+
+(Full menu coming soon!)
+    `;
+    alert(options);
+}
+
+// Load versions on Bible tab init
+function loadBibleBooks() {
+    // Load last selected version from storage
+    const savedVersion = localStorage.getItem('selectedBibleVersion');
+    if (savedVersion) {
+        selectedBibleVersion = savedVersion;
+    }
+    currentBibleTab = 'all';
+    currentBibleLanguageFilter = 'English';
+    displayBibleVersions();
+}
+
+// ===== BIBLE BOOKS & CHAPTERS =====
+const BIBLE_BOOKS = [
+    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings',
+    '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job',
+    'Psalms', 'Proverbs', 'Ecclesiastes', 'Isaiah', 'Jeremiah', 'Lamentations',
+    'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah',
+    'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+    'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians',
+    '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians',
+    '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus',
+    'Philemon', 'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John',
+    '3 John', 'Jude', 'Revelation'
+];
+
+function showBibleBook(bookName, chapter = 1) {
+    // Save current browse mode before opening reader
+    previousBibleMode = bibleBrowseMode;
+    console.log('📖 Saving previous mode:', previousBibleMode);
+
+    currentBibleBook = { name: bookName };
+    currentBibleChapter = chapter;
+
+    // Update header
+    document.getElementById('readerBookTitle').textContent = bookName;
+    document.getElementById('readerChapterNum').textContent = chapter;
+    document.getElementById('readerVersion').textContent = selectedBibleVersion;
+
+    // Show reader screen
+    showScreen('bibleReader');
+
+    // Load chapter content
+    loadBibleChapter(bookName, chapter);
+}
+
+async function loadBibleChapter(bookName, chapter) {
+    const verseList = document.getElementById('verseList');
+    verseList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">📖 Loading chapter...</div>';
+
+    try {
+        console.log('📖 Fetching:', bookName, chapter);
+        const result = await fetchBiblePassage(bookName, chapter);
+
+        if (result && result.verses && result.verses.length > 0) {
+            console.log('✅ Got', result.verses.length, 'verses');
+            let html = '';
+
+            result.verses.forEach((verse, index) => {
+                let verseNum = index + 1;
+
+                if (verse.verse) {
+                    // Extract verse number from formats like:
+                    // "Genesis 1:1" -> "1"
+                    // "1" -> "1"
+                    const match = verse.verse.match(/\d+$/);
+                    if (match) {
+                        verseNum = match[0];
+                    }
+                }
+
+                html += `<div style="margin-bottom: 14px; line-height: 1.8;">
+                    <span style="color: #667eea; font-weight: 700; font-size: 13px; margin-right: 6px;">${verseNum}</span>
+                    <span style="color: #333;">${verse.content}</span>
+                </div>`;
+            });
+
+            verseList.innerHTML = html;
+            console.log('✅ Chapter rendered');
+        } else {
+            console.warn('⚠️ No verses returned');
+            verseList.innerHTML = '<div style="color: #999; padding: 20px; text-align: center;">No verses found for this chapter</div>';
+        }
+    } catch (error) {
+        console.error('❌ Error loading chapter:', error);
+        verseList.innerHTML = `<div style="color: #d32f2f; padding: 20px; text-align: center;">Error: ${error.message}<br><small>Please try another chapter</small></div>`;
+    }
+}
+
+function nextBibleChapter() {
+    currentBibleChapter++;
+    console.log('📄 Next chapter:', currentBibleBook.name, currentBibleChapter);
+    loadBibleChapter(currentBibleBook.name, currentBibleChapter);
+    updateBibleHeader();
+}
+
+function previousBibleChapter() {
+    if (currentBibleChapter > 1) {
+        currentBibleChapter--;
+        console.log('📄 Previous chapter:', currentBibleBook.name, currentBibleChapter);
+        loadBibleChapter(currentBibleBook.name, currentBibleChapter);
+        updateBibleHeader();
+    }
+}
+
+function updateBibleHeader() {
+    document.getElementById('readerChapterNum').textContent = currentBibleChapter;
+}
+
+function playBibleAudio() {
+    alert(`🔊 Audio for ${currentBibleBook?.name} ${currentBibleChapter} coming soon!\n(NIV Audio available)`);
+}
+
+function jumpToChapter(chapter) {
+    const chapterNum = parseInt(chapter);
+    if (chapterNum > 0 && currentBibleBook) {
+        currentBibleChapter = chapterNum;
+        loadBibleChapter(currentBibleBook.name, currentBibleChapter);
+        updateBibleHeader();
+        console.log('📖 Jumped to', currentBibleBook.name, chapterNum);
+    }
+}
+
+function goBackFromBibleReader() {
+    console.log('🔙 Going back from reader. Previous mode:', previousBibleMode);
+
+    if (previousBibleMode === 'chapter') {
+        // Go back to chapter view
+        bibleBrowseMode = 'chapter';
+        showScreen('bible');
+        renderBibleIndex();
+    } else {
+        // Go back to book view
+        showBibleBooks();
+    }
+}
+
 // Old auth functions removed - using local login instead
 
 function logoutMember() {
@@ -2662,4 +3194,244 @@ function sharePhoto(index) {
       alert('📋 ' + shareText);
     }
   }
+}
+
+// ===== OFFERING / UPI PAYMENT SYSTEM =====
+function generateOfferingQR() {
+  const qrImg = document.getElementById('qrCode');
+  if (!qrImg) {
+    console.error('QR image element not found');
+    return;
+  }
+
+  // Generate UPI link for QR
+  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=&tr=Offering`;
+
+  console.log('📱 Generating QR for UPI:', upiLink);
+
+  // Generate QR code image URL using QR Server API
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiLink)}`;
+
+  console.log('🔗 QR URL:', qrUrl);
+
+  qrImg.src = qrUrl;
+  qrImg.onload = function() {
+    console.log('✅ QR code loaded successfully');
+  };
+  qrImg.onerror = function(e) {
+    console.error('❌ Failed to load QR code:', e);
+    qrImg.alt = 'QR Code - Please use UPI ID manually';
+  };
+}
+
+function copyUPIId() {
+  const upiId = document.getElementById('upiId');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(UPI_ID).then(() => {
+      alert('✅ UPI ID copied: ' + UPI_ID);
+    }).catch(err => {
+      alert('UPI ID: ' + UPI_ID);
+    });
+  } else {
+    alert('UPI ID: ' + UPI_ID);
+  }
+}
+
+function initiateUPIPayment() {
+  // No amount specified - just show WhatsApp instruction
+  alert(`After payment, text your name & offering reason to:\n\n📱 +91 99863 34250`);
+}
+
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function initiateUPIPaymentWithAmount(amount) {
+  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=${amount}&tr=Offering`;
+
+  if (isMobileDevice()) {
+    // Mobile: Try to open UPI app
+    window.location.href = upiLink;
+    setTimeout(() => {
+      alert(`After payment, text your name & offering reason to:\n\n📱 +91 99863 34250`);
+    }, 1000);
+  } else {
+    // Desktop: Show modal with options
+    showPaymentModal(amount, upiLink);
+  }
+}
+
+function initiateUPIPaymentCustom() {
+  const amount = document.getElementById('customAmount')?.value || '';
+
+  if (!amount || amount === '0') {
+    alert('Please enter an amount');
+    return;
+  }
+
+  const upiLink = `upi://pay?pa=${UPI_ID}&pn=Whitefield%20Methodist%20Church&am=${amount}&tr=Offering`;
+
+  if (isMobileDevice()) {
+    // Mobile: Try to open UPI app
+    window.location.href = upiLink;
+    setTimeout(() => {
+      alert(`After payment, text your name & offering reason to:\n\n📱 +91 99863 34250`);
+    }, 1000);
+  } else {
+    // Desktop: Show modal with options
+    showPaymentModal(amount, upiLink);
+  }
+}
+
+function showPaymentModal(amount, upiLink) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  modal.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">💳</div>
+        <div style="font-weight: 600; font-size: 16px; color: #333; margin-bottom: 8px;">Pay ₹${amount}</div>
+        <div style="font-size: 13px; color: #666; line-height: 1.5;">
+          This app works best on mobile with UPI apps installed. To test on desktop, use one of the options below.
+        </div>
+      </div>
+
+      <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px; color: #333; font-family: monospace; word-break: break-all;">
+        UPI Link: ${upiLink}
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <button onclick="copyToClipboard('${upiLink}')" style="flex: 1; background: #c41e3a; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📋 Copy Link</button>
+        <button onclick="sharePaymentLink('${upiLink}')" style="flex: 1; background: #667eea; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📤 Share</button>
+      </div>
+
+      <div style="margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 4px; font-size: 12px; color: #333; line-height: 1.5;">
+        <strong>📱 On Mobile:</strong> Install Google Pay, PhonePe, Paytm, or any UPI app, then open this link.
+      </div>
+
+      <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; background: #f0f0f0; color: #333; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">Close</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ UPI Link copied to clipboard!');
+    }).catch(() => {
+      alert('UPI Link:\n' + text);
+    });
+  } else {
+    alert('UPI Link:\n' + text);
+  }
+}
+
+function sharePaymentLink(upiLink) {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Whitefield Methodist Church - Offering',
+      text: 'Pay your offering via UPI',
+      url: upiLink
+    }).catch(err => console.log('Share failed:', err));
+  } else {
+    alert('Sharing not supported. Copy the link instead.');
+  }
+}
+
+function setOfferingAmount(amount) {
+  document.getElementById('customAmount').value = amount;
+  document.getElementById('customAmount').focus();
+}
+
+function submitOfferingManual() {
+  const name = document.getElementById('offeringName')?.value || 'Anonymous';
+  const amount = document.getElementById('customAmount')?.value || '0';
+  const type = document.getElementById('offeringType')?.value || 'General';
+
+  if (!amount || amount == '0') {
+    alert('Please enter an amount');
+    return;
+  }
+
+  const message = `🙏 Offering recorded:\nName: ${name}\nAmount: ₹${amount}\nType: ${type}\n\nThank you for your generous giving!`;
+  alert(message);
+
+  // Reset form
+  document.getElementById('offeringName').value = '';
+  document.getElementById('customAmount').value = '';
+  document.getElementById('offeringType').value = 'General';
+}
+
+function showPaymentTab(tab) {
+  document.getElementById('upiTab').style.display = tab === 'upi' ? 'block' : 'none';
+  document.getElementById('razorpayTab').style.display = tab === 'razorpay' ? 'block' : 'none';
+
+  document.getElementById('tabUPI').style.background = tab === 'upi' ? '#c41e3a' : '#f0f0f0';
+  document.getElementById('tabUPI').style.color = tab === 'upi' ? 'white' : '#333';
+  document.getElementById('tabRazorpay').style.background = tab === 'razorpay' ? '#c41e3a' : '#f0f0f0';
+  document.getElementById('tabRazorpay').style.color = tab === 'razorpay' ? 'white' : '#333';
+}
+
+// Generate QR when offering screen opens
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    generateOfferingQR();
+    setupQRInteractivity();
+  }, 500);
+});
+
+function setupQRInteractivity() {
+  const qrContainer = document.getElementById('qrContainer');
+  if (!qrContainer) return;
+
+  qrContainer.addEventListener('mouseenter', function() {
+    this.style.background = '#f0f0f0';
+    this.style.boxShadow = '0 4px 12px rgba(196, 30, 58, 0.2)';
+    const img = this.querySelector('img');
+    if (img) img.style.transform = 'scale(1.05)';
+  });
+
+  qrContainer.addEventListener('mouseleave', function() {
+    this.style.background = 'white';
+    this.style.boxShadow = 'none';
+    const img = this.querySelector('img');
+    if (img) img.style.transform = 'scale(1)';
+  });
+
+  qrContainer.addEventListener('touchstart', function() {
+    this.style.background = '#f0f0f0';
+  });
+
+  qrContainer.addEventListener('touchend', function() {
+    this.style.background = 'white';
+  });
+
+  // Add button hover effects for quick pay buttons
+  const quickPayButtons = document.querySelectorAll('[onclick*="initiateUPIPaymentWithAmount"]');
+  quickPayButtons.forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      this.style.background = '#c41e3a';
+      this.style.color = 'white';
+      this.style.transform = 'scale(1.05)';
+    });
+    btn.addEventListener('mouseleave', function() {
+      this.style.background = 'white';
+      this.style.color = '#c41e3a';
+      this.style.transform = 'scale(1)';
+    });
+  });
 }
