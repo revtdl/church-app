@@ -1735,7 +1735,7 @@
                     <td>${m.area || '-'}</td>
                     <td style="text-align: center;">
                         <button onclick="editMember('${m.id}')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 12px; margin-right: 6px;">Edit</button>
-                        <button onclick="deleteMember('${m.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete</button>
+                        <button onclick="deleteMember('${m.id}', '${m.name}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete</button>
                     </td>
                 </tr>`;
             });
