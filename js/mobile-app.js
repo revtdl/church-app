@@ -4428,24 +4428,10 @@ function checkUserRegistration(uid) {
                 db.collection('registrations').where('email', '==', userEmail).limit(1).get()
                     .then((snapshot) => {
                         if (snapshot && !snapshot.empty) {
-                            // Found by email! User has registered before but UID changed
-                            const existingDoc = snapshot.docs[0];
-                            const existingData = existingDoc.data();
-
-                            console.log('✅ User found by email, updating UID');
-
-                            // Update the registration with new UID
-                            db.collection('registrations').doc(uid).set({
-                                ...existingData,
-                                uid: uid
-                            }).then(() => {
-                                logRegistrationAudit(uid, userEmail, 'success', 'User migrated from email to UID');
-                                showApp();
-                            }).catch(err => {
-                                console.error('Error updating registration:', err);
-                                logRegistrationAudit(uid, userEmail, 'system_error', 'Failed to update registration: ' + err.message);
-                                showRegistrationForm();
-                            });
+                            // Found by email! User already registered
+                            console.log('✅ User found by email - already registered');
+                            logRegistrationAudit(uid, userEmail, 'success', 'User already registered, accessing app');
+                            showApp();
                         } else {
                             // Not found by UID or email - new user
                             console.log('📝 New user - must register');
@@ -4593,6 +4579,16 @@ async function completeRegistration() {
                 });
                 logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'success', 'Registration migrated from old UID');
                 showNotification(`✅ Welcome ${name}! Registration updated.`);
+                setTimeout(() => {
+                    showApp();
+                    isSubmittingRegistration = false;
+                }, 500);
+                return;
+            } else {
+                // Email exists with SAME UID - user already registered, just go to app
+                console.log('✅ User already registered with this email and UID');
+                logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'success', 'Already registered, accessing app');
+                showNotification(`✅ Welcome back ${name}!`);
                 setTimeout(() => {
                     showApp();
                     isSubmittingRegistration = false;
