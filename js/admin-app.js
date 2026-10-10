@@ -439,14 +439,14 @@ function openMemberForm() {
     if (modal) modal.classList.add('active');
 }
 
-async function deleteMember(memberId) {
-    if (!confirm('Delete this member? This action cannot be undone.')) return;
+async function deleteMember(memberId, memberName) {
+    if (!confirm(`Delete ${memberName || 'this member'}? This action cannot be undone.`)) return;
     try {
         await db.collection('members').doc(memberId).delete();
-        alert('Member deleted!');
+        alert(`✅ ${memberName || 'Member'} deleted!`);
         loadMembers();
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('❌ Error: ' + error.message);
     }
 }
 
