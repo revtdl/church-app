@@ -4319,3 +4319,33 @@ function saveDonationToFirebase(paymentResponse) {
             showNotification('❌ Error saving donation: ' + error.message);
         });
 }
+
+// ===== SHARE BANK DETAILS =====
+function shareBankDetails() {
+    const bankDetails = `
+🏦 Whitefield Methodist Church - Bank Details
+
+Beneficiary: Whitefield Methodist Church
+Bank: The South Indian Bank
+IFSC Code: SIBL0000491
+Account No: 0491053000006056
+
+UPI: qr.wmchurch@sib
+
+Please share this for donations and offerings.
+    `.trim();
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'Church Bank Details',
+            text: bankDetails
+        }).catch(err => console.log('Share error:', err));
+    } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(bankDetails).then(() => {
+            showNotification('✅ Bank details copied to clipboard!');
+        }).catch(() => {
+            alert('Bank Details:\n\n' + bankDetails);
+        });
+    }
+}
