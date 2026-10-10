@@ -47,5 +47,12 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if request.auth != null;
     }
+
+    // Donations collection - for Razorpay donations
+    match /donations/{document=**} {
+      allow read: if request.auth != null;
+      allow create: if true;
+      allow update, delete: if false;
+    }
   }
 }

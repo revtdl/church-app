@@ -1,6 +1,11 @@
 // ===== GLOBAL CONFIGURATION =====
 const UPI_ID = "qr.wmchurch@sib";
 const WHATSAPP_NUMBER = "919986334250";
+const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_KEY_ID"; // Replace with your key from Razorpay dashboard
+
+// ===== RAZORPAY PAYMENT VARIABLES =====
+let donationAmount = 0;
+let donationDonorName = '';
 
 // ===== NOTIFICATION SYSTEM =====
 let lastSeenPhotoTimestamp = localStorage.getItem('lastSeenPhotoTimestamp') || '2026-01-01T00:00:00.000Z';
@@ -4226,4 +4231,92 @@ function setupQRInteractivity() {
       this.style.transform = 'scale(1)';
     });
   });
+}
+
+// ===== RAZORPAY PAYMENT INTEGRATION =====
+function openRazorpayModal() {
+    // Show amount input dialog
+    const amount = prompt('Enter donation amount (₹):', '500');
+    if (!amount || isNaN(amount) || amount < 10) {
+        showNotification('❌ Please enter a valid amount (minimum ₹10)');
+        return;
+    }
+
+    const name = currentMember?.name || prompt('Enter your name:', '');
+    if (!name) {
+        showNotification('❌ Please enter your name');
+        return;
+    }
+
+    donationAmount = Math.round(parseFloat(amount) * 100); // Convert to paise
+    donationDonorName = name;
+
+    initializeRazorpay();
+}
+
+function initializeRazorpay() {
+    const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: donationAmount,
+        currency: "INR",
+        name: "Whitefield Methodist Church",
+        description: "Donation/Offering",
+        image: "church-icon.png",
+        handler: function(response) {
+            saveDonationToFirebase(response);
+        },
+        prefill: {
+            name: donationDonorName,
+            email: currentMember?.email || "",
+            contact: ""
+        },
+        notes: {
+            church: "Whitefield Methodist Church",
+            donor_name: donationDonorName
+        },
+        theme: {
+            color: "#667eea"
+        }
+    };
+
+    const rzp1 = new Razorpay(options);
+    rzp1.on('payment.failed', function (response) {
+        showNotification('❌ Payment failed: ' + response.error.description);
+        console.error('Payment failed:', response.error);
+    });
+    rzp1.open();
+}
+
+function saveDonationToFirebase(paymentResponse) {
+    if (!db) {
+        showNotification('❌ Database connection error');
+        return;
+    }
+
+    const donation = {
+        amount: donationAmount / 100, // Convert back to rupees
+        donor_name: donationDonorName,
+        donor_email: currentMember?.email || 'anonymous',
+        payment_id: paymentResponse.razorpay_payment_id,
+        order_id: paymentResponse.razorpay_order_id || '',
+        signature: paymentResponse.razorpay_signature || '',
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleDateString('en-IN'),
+        status: 'success'
+    };
+
+    db.collection('donations').add(donation)
+        .then((docRef) => {
+            console.log('✅ Donation saved:', docRef.id);
+            showNotification(`✅ Thank you ${donationDonorName}! Donation of ₹${donation.amount} received. Receipt sent to your email.`);
+
+            // Reset values
+            donationAmount = 0;
+            donationDonorName = '';
+        })
+        .catch((error) => {
+            console.error('❌ Error saving donation:', error);
+            showNotification('❌ Error saving donation: ' + error.message);
+        });
+}
 }
