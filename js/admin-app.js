@@ -237,6 +237,10 @@ async function loadPrayers() {
         console.log('📥 Loading prayers...');
         const snapshot = await db.collection('prayers').get();
         const tbody = document.getElementById('prayersTable');
+        if (!tbody) {
+            console.log('⚠️ Prayers table element not found (prayers section may be hidden)');
+            return;
+        }
         if (snapshot.size === 0) {
             tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 30px;">No prayers yet</td></tr>';
             return;

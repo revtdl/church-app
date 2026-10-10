@@ -13,7 +13,7 @@
     <script src="js/firebase-config.js"></script>
     <script src="js/sheets-sync.js"></script>
     <script src="js/email-auth.js"></script>
-    <script src="js/mobile-app.js?v=20261040"></script>
+    <script src="js/mobile-app.js?v=20261059"></script>
     <script src="js/calendar-events.js"></script>
 </head>
 <body>
@@ -36,7 +36,7 @@
     <!-- Mobile Login Screen - Email Authentication -->
     <div id="loginScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; min-height: 100vh;">
         <div style="text-align: center; width: 100%; max-width: 400px; padding: 40px 20px;">
-            <div style="font-size: 72px; margin-bottom: 20px;">⛪</div>
+            <img src="logo.png" alt="Methodist Church Logo" style="height: 80px; margin-bottom: 20px;">
             <h1 style="margin: 0; font-size: 28px; margin-bottom: 10px;">Whitefield Methodist Church</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Members Only Login</p>
 
@@ -51,30 +51,6 @@
                     </svg>
                     Sign in with Google
                 </button>
-
-                <button onclick="switchToEmailLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">📧 Use Email Instead</button>
-            </div>
-
-            <!-- Email Input Screen -->
-            <div id="emailStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px); display: none;">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Email Address</label>
-                    <input type="email" id="emailInput" placeholder="samuel@church.com" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;" autocomplete="email">
-                    <small style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 4px; display: block;">Enter your church email address</small>
-                </div>
-
-                <button onclick="sendLoginEmail()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Send Login Link</button>
-
-                <button onclick="switchToGoogleLogin()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">🔵 Use Google Sign-in</button>
-            </div>
-
-            <!-- Email Verification Screen -->
-            <div id="verificationStep" style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px); display: none; text-align: center;">
-                <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0;">✅ Login link sent to your email!</p>
-                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 20px 0;">Check your inbox and click the link to login</p>
-                <p id="emailVerificationDisplay" style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; color: white; font-size: 13px; margin-bottom: 15px;"></p>
-                <button onclick="resendLoginEmail()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">Resend Link</button>
-                <button onclick="backToEmailInput()" style="width: 100%; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Use Different Email</button>
             </div>
 
             <div id="loginError" style="color: #ff6b6b; margin-top: 15px; font-size: 13px; display: none; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2);"></div>
@@ -84,7 +60,7 @@
     <!-- Registration Form (Hidden until first login) -->
     <div id="registrationScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; min-height: 100vh;">
         <div style="text-align: center; width: 100%; max-width: 400px; padding: 40px 20px;">
-            <div style="font-size: 72px; margin-bottom: 20px;">✍️</div>
+            <img src="logo.png" alt="Methodist Church Logo" style="height: 80px; margin-bottom: 20px;">
             <h1 style="margin: 0; font-size: 24px; margin-bottom: 10px;">Complete Your Profile</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Please complete your registration</p>
 
@@ -222,14 +198,75 @@
                 <div id="eventsCalendarContainer" style="padding: 0;">Loading calendar...</div>
             </div>
 
-            <!-- Prayers Screen -->
+            <!-- Prayers & Feedback Screen -->
             <div id="prayers" class="screen">
                 <div style="margin-bottom: 12px; display: flex; gap: 8px;">
                     <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
-                    <button onclick="loadPrayerRealtime()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
+                    <button onclick="refreshPrayerOrFeedback()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">🔄 Refresh</button>
                 </div>
-                <div class="section-title">Prayers</div>
-                <div id="prayerList" style="padding: 0;">Loading prayers...</div>
+                <div class="section-title">Prayers & Feedback</div>
+
+                <!-- Tabs -->
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <button id="tabPrayers" onclick="switchPrayerTab('prayers')" style="flex: 1; background: #F44336; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">❤️ Prayers</button>
+                    <button id="tabFeedback" onclick="switchPrayerTab('feedback')" style="flex: 1; background: #f0f0f0; color: #333; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">💬 Feedback</button>
+                </div>
+
+                <!-- Prayers Tab -->
+                <div id="prayersTab" style="display: block;">
+                    <!-- Add Prayer Form -->
+                    <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 2px solid #F44336;">
+                        <div style="font-weight: 600; color: #F44336; margin-bottom: 12px; font-size: 14px;">📝 Share Prayer Request</div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; font-size: 12px; color: #333; display: block; margin-bottom: 6px;">Your Name *</label>
+                            <input type="text" id="prayerName" placeholder="Enter your name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; font-size: 12px; color: #333; display: block; margin-bottom: 6px;">Prayer For *</label>
+                            <input type="text" id="prayerTitle" placeholder="e.g., Health, Job, Family, Guidance..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; font-size: 12px; color: #333; display: block; margin-bottom: 6px;">Prayer Message *</label>
+                            <textarea id="prayerMessage" placeholder="Share your prayer request..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; box-sizing: border-box; min-height: 80px; resize: vertical;"></textarea>
+                        </div>
+
+                        <button onclick="submitPrayer()" style="width: 100%; background: #F44336; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">🙏 Send to Pastor David</button>
+                        <div id="prayerStatus" style="margin-top: 8px; font-size: 11px; display: none;"></div>
+                        <div style="margin-top: 12px; padding: 10px; background: #fff3e0; border-radius: 6px; font-size: 11px; color: #666; border-left: 3px solid #F44336;">
+                            ✉️ Your prayer will be sent to Pastor David via WhatsApp
+                        </div>
+                    </div>
+
+                    <!-- Prayers List -->
+                    <div style="font-weight: 600; color: #F44336; margin-bottom: 12px; font-size: 14px;">💌 Prayer Requests</div>
+                    <div id="prayerList" style="padding: 0;">Loading prayers...</div>
+                </div>
+
+                <!-- Feedback Tab -->
+                <div id="feedbackTab" style="display: none;">
+                    <div style="background: white; border-radius: 12px; padding: 16px;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-weight: 600; font-size: 14px; color: #333; display: block; margin-bottom: 8px;">Your Name *</label>
+                            <input type="text" id="feedbackName" placeholder="Enter your name" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-weight: 600; font-size: 14px; color: #333; display: block; margin-bottom: 8px;">Feedback Type</label>
+                            <input type="text" id="feedbackType" placeholder="e.g., Suggestion, Complaint, Compliment, Other..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-weight: 600; font-size: 14px; color: #333; display: block; margin-bottom: 8px;">Feedback *</label>
+                            <textarea id="feedbackMessage" placeholder="Share your feedback, suggestion, or message..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; min-height: 120px; resize: vertical;"></textarea>
+                        </div>
+
+                        <button onclick="submitFeedback()" style="width: 100%; background: #FF9800; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">📤 Send to Pastor David</button>
+                        <div id="feedbackStatus" style="margin-top: 10px; font-size: 12px; display: none;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Offering Screen -->
@@ -337,10 +374,10 @@
                     <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Sermons</div></div>
                 </div>
 
-                <!-- Prayers Card -->
+                <!-- Prayers & Feedback Card -->
                 <div onclick="showScreen('prayers')" style="background: white; border: 2px solid #F44336; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
                     <div style="font-size: 32px;">❤️</div>
-                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers</div></div>
+                    <div style="flex: 1;"><div style="font-weight: 600; color: #333;">Prayers & Feedback</div></div>
                 </div>
 
                 <!-- Offering Card -->

@@ -1,61 +1,54 @@
-#!/usr/bin/env node
+// Manual cleanup - find David Livingston duplicates in Firestore
+// UIDs to DELETE (keep first one):
+// Delete UIDs: find in Firestore registrations collection with name="David Livingston T" and phone="9986012001"
+
 const admin = require('firebase-admin');
-const { getFirestore } = require('firebase-admin/firestore');
-const path = require('path');
-const fs = require('fs');
+const serviceAccount = require('./serviceAccountKey.json');
 
-const credPath = path.join(__dirname, 'churchapp-74dec-firebase-adminsdk-fbsvc-da4f9fa9ee.json');
-const creds = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
-admin.initializeApp({ credential: admin.cert(creds) });
-const db = getFirestore();
+const db = admin.firestore();
 
-async function cleanup() {
-    console.log('\n🧹 Finding and deleting old duplicate records...\n');
+async function cleanupDavid() {
+  try {
+    console.log('🔍 Finding David Livingston T duplicates...\n');
 
-    try {
-        const snapshot = await db.collection('members').get();
+    // Find all with same phone
+    const snapshot = await db.collection('registrations')
+      .where('name', '==', 'David Livingston T')
+      .where('phone', '==', '9986012001')
+      .get();
 
-        // Group by name
-        const byName = {};
-        snapshot.forEach(doc => {
-            const name = doc.data().name;
-            if (!byName[name]) byName[name] = [];
-            byName[name].push({ id: doc.id, data: doc.data() });
-        });
+    console.log(`Found ${snapshot.size} records for David Livingston T`);
 
-        let deletedCount = 0;
+    const uids = [];
+    snapshot.forEach(doc => {
+      console.log(`  UID: ${doc.id}, Email: ${doc.data().email}, Name: ${doc.data().name}`);
+      uids.push(doc.id);
+    });
 
-        // Find duplicates
-        for (const [name, docs] of Object.entries(byName)) {
-            if (docs.length > 1) {
-                console.log(`\n⚠️ Found ${docs.length} records for "${name}"`);
-
-                // Keep the one with the most fields, delete others
-                const sorted = docs.sort((a, b) =>
-                    Object.keys(b.data).length - Object.keys(a.data).length
-                );
-
-                for (let i = 1; i < sorted.length; i++) {
-                    const oldDoc = sorted[i];
-                    console.log(`   🗑️ Deleting old record (${Object.keys(oldDoc.data).length} fields)`);
-                    await db.collection('members').doc(oldDoc.id).delete();
-                    deletedCount++;
-                }
-
-                console.log(`   ✅ Keeping new record (${Object.keys(sorted[0].data).length} fields)`);
-            }
-        }
-
-        console.log(`\n${'='.repeat(60)}`);
-        console.log(`✅ Cleanup complete! Deleted: ${deletedCount} duplicate records`);
-        console.log(`${'='.repeat(60)}\n`);
-
-        process.exit(0);
-    } catch (err) {
-        console.error('❌ Error:', err.message);
-        process.exit(1);
+    if (uids.length > 1) {
+      console.log(`\n⚠️  ${uids.length - 1} duplicates found!`);
+      console.log('Keeping: ' + uids[0]);
+      console.log('Deleting: ' + uids.slice(1).join(', '));
+      
+      // Delete duplicates (keep first)
+      for (let i = 1; i < uids.length; i++) {
+        await db.collection('registrations').doc(uids[i]).delete();
+        console.log(`✅ Deleted: ${uids[i]}`);
+      }
+      console.log('\n✅ Cleanup complete!');
+    } else {
+      console.log('✅ No duplicates found!');
     }
+
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error:', error);
+    process.exit(1);
+  }
 }
 
-cleanup();
+cleanupDavid();

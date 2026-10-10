@@ -7,6 +7,9 @@ const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_KEY_ID"; // Replace with your key from Ra
 let donationAmount = 0;
 let donationDonorName = '';
 
+// ===== GLOBAL USER STATE =====
+let currentMember = null;
+
 // ===== NOTIFICATION SYSTEM =====
 let lastSeenPhotoTimestamp = localStorage.getItem('lastSeenPhotoTimestamp') || '2026-01-01T00:00:00.000Z';
 let lastSeenAnnouncementTimestamp = localStorage.getItem('lastSeenAnnouncementTimestamp') || '2026-01-01T00:00:00.000Z';
@@ -218,31 +221,50 @@ function showLoginError(message) {
 
 function googleSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
+    // Request email and profile scopes explicitly (addScope is singular, not plural)
+    provider.addScope('email');
+    provider.addScope('profile');
     firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-            console.log('✅ Google Sign-in successful:', result.user.displayName);
-            window.currentMember = {
-                name: result.user.displayName || result.user.email,
-                email: result.user.email,
-                uid: result.user.uid
-            };
-            localStorage.setItem('googleLogin', 'true');
-            localStorage.setItem('memberEmail', result.user.email);
-            localStorage.setItem('memberName', result.user.displayName || result.user.email);
-            localStorage.setItem('memberUID', result.user.uid);
-
-            // Log successful login
-            logLoginAttempt(result.user, 'success', 'Google Sign-in');
-
-            // Check if user is registered
-            checkUserRegistration(result.user.uid);
-        })
         .catch((error) => {
             console.error('❌ Google Sign-in error:', error);
-            logLoginAttempt({ displayName: 'Unknown', email: 'Unknown' }, 'failed', error.message);
             showLoginError('❌ Google Sign-in failed: ' + error.message);
         });
 }
+
+// Auth state listener - handles login and returning users
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        console.log('✅ User authenticated:', user.displayName, 'Email:', user.email, 'UID:', user.uid);
+
+        // Use email from user object, or fallback to localStorage
+        const userEmail = user.email || localStorage.getItem('memberEmail');
+        const userName = user.displayName || user.email || localStorage.getItem('memberName') || 'User';
+
+        window.currentMember = {
+            name: userName,
+            email: userEmail,
+            uid: user.uid
+        };
+
+        console.log('📝 currentMember set to:', window.currentMember);
+
+        localStorage.setItem('googleLogin', 'true');
+        if (userEmail) localStorage.setItem('memberEmail', userEmail);
+        localStorage.setItem('memberName', userName);
+        localStorage.setItem('memberUID', user.uid);
+
+        if (typeof logLoginAttempt === 'function') {
+            logLoginAttempt(user, 'success', 'Google Sign-in');
+        }
+
+        // Small delay to ensure currentMember is set before checking registration
+        setTimeout(() => {
+            if (typeof checkUserRegistration === 'function') {
+                checkUserRegistration(user.uid);
+            }
+        }, 100);
+    }
+});
 
 function switchToEmailLogin() {
     document.getElementById('googleLoginStep').style.display = 'none';
@@ -258,16 +280,19 @@ function checkLocalLogin() {
     const isGoogleLogin = localStorage.getItem('googleLogin') === 'true';
     const memberEmail = localStorage.getItem('memberEmail');
     const memberName = localStorage.getItem('memberName');
+    const memberUID = localStorage.getItem('memberUID');
 
     console.log('🔍 Checking login... Google:', isGoogleLogin, 'Email:', memberEmail);
 
-    if (isGoogleLogin && memberEmail && memberName) {
+    if (isGoogleLogin && memberEmail && memberName && memberUID) {
         window.currentMember = {
             name: memberName,
-            email: memberEmail
+            email: memberEmail,
+            uid: memberUID
         };
-        console.log('✅ Resuming Google login:', memberName);
-        showApp();
+        console.log('✅ Resuming Google login, verifying registration:', memberName);
+        // STRICT MODE: Verify user is registered before allowing app access
+        checkUserRegistration(memberUID);
         return true;
     }
 
@@ -302,6 +327,7 @@ function localLogout() {
 
 function showApp() {
     const loginScreen = document.getElementById('loginScreen');
+    const registrationScreen = document.getElementById('registrationScreen');
     const appContainer = document.getElementById('appContainer');
 
     // Clear old event cache to force fresh load
@@ -309,6 +335,7 @@ function showApp() {
     console.log('🧹 Cleared old event cache');
 
     if (loginScreen) loginScreen.style.display = 'none';
+    if (registrationScreen) registrationScreen.style.display = 'none';
     if (appContainer) {
         appContainer.style.display = 'flex';
         appContainer.style.visibility = 'visible';
@@ -336,8 +363,8 @@ function showApp() {
 function initializeApp() {
     console.log('App initialized for:', currentMember?.name);
 
-    // Pre-load Bible data in memory
-    initializeBibleCache();
+    // Bible feature disabled - not required
+    // initializeBibleCache();
 
     // Sign in anonymously to enable Firebase access
     firebase.auth().signInAnonymously().then(() => {
@@ -1438,7 +1465,8 @@ function loadPrayerRealtime() {
                         html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
                         html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
                         html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">' + date + '</div>';
-                        html += '<div style="font-size: 14px; color: #666;">' + content + '</div>';
+                        html += '<div style="font-size: 14px; color: #666; margin-bottom: 12px;">' + content + '</div>';
+                        html += '<button onclick="sharePrayerToWhatsApp(\'' + doc.id + '\', \'' + content.replace(/'/g, "\\'") + '\', \'' + title.replace(/'/g, "\\'") + '\')" style="width: 100%; background: #25D366; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">📱 Share to Pastor\'s WhatsApp</button>';
                         html += '</div>';
                     });
 
@@ -3177,9 +3205,7 @@ function setSongLanguage(lang) {
   loadAllSongBooks();
 }
 
-function loadSongBooksRealtime() {
-  loadAllSongBooks();
-}
+// loadSongBooksRealtime() removed - hymn feature disabled
 
 function loadAllSongBooks() {
   const songBooksList = document.getElementById('songBooksList');
@@ -4083,30 +4109,8 @@ function showPaymentTab(tab) {
   document.getElementById('tabRazorpay').style.color = tab === 'razorpay' ? 'white' : '#333';
 }
 
-// ===== HYMNS SYSTEM =====
-var hymnsCache = null;
-
-function loadHymnsData(callback) {
-  if (hymnsCache) {
-    callback(hymnsCache);
-    return;
-  }
-
-  fetch('hymns_songbook.json')
-    .then(response => {
-      if (!response.ok) throw new Error('Failed to load hymns');
-      return response.json();
-    })
-    .then(data => {
-      hymnsCache = data;
-      console.log('✅ Hymns loaded:', data.sections.length, 'sections');
-      callback(data);
-    })
-    .catch(error => {
-      console.error('❌ Error loading hymns:', error);
-      callback(null);
-    });
-}
+// ===== HYMNS SYSTEM (REMOVED) =====
+// Hymn feature removed from mobile app per user request
 
 function loadSongBooks() {
   const language = document.getElementById('songLanguage')?.value || 'English';
@@ -4199,7 +4203,6 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(() => {
     generateOfferingQR();
     setupQRInteractivity();
-    loadHymnsData(); // Pre-load hymns
   }, 500);
 });
 
@@ -4386,32 +4389,84 @@ function checkUserRegistration(uid) {
         return;
     }
 
+    const userEmail = window.currentMember?.email;
+
+    // First, try to find by UID
     db.collection('registrations').doc(uid).get()
         .then((doc) => {
             if (doc.exists) {
-                // User already registered - go to app
-                console.log('✅ User registered, going to app');
+                // Found by UID - user registered
+                console.log('✅ User registered (by UID), going to app');
+                logRegistrationAudit(uid, userEmail, 'success', 'User found by UID');
                 showApp();
             } else {
-                // New user - show registration form
-                console.log('📝 New user, showing registration form');
-                showRegistrationForm();
+                // Not found by UID - try to find by email
+                console.log('🔍 UID not found, checking by email:', userEmail);
+                db.collection('registrations').where('email', '==', userEmail).limit(1).get()
+                    .then((snapshot) => {
+                        if (snapshot && !snapshot.empty) {
+                            // Found by email! User has registered before but UID changed
+                            const existingDoc = snapshot.docs[0];
+                            const existingData = existingDoc.data();
+
+                            console.log('✅ User found by email, updating UID');
+
+                            // Update the registration with new UID
+                            db.collection('registrations').doc(uid).set({
+                                ...existingData,
+                                uid: uid
+                            }).then(() => {
+                                logRegistrationAudit(uid, userEmail, 'success', 'User migrated from email to UID');
+                                showApp();
+                            }).catch(err => {
+                                console.error('Error updating registration:', err);
+                                logRegistrationAudit(uid, userEmail, 'system_error', 'Failed to update registration: ' + err.message);
+                                showRegistrationForm();
+                            });
+                        } else {
+                            // Not found by UID or email - new user
+                            console.log('📝 New user - must register');
+                            logRegistrationAudit(uid, userEmail, 'validation_error', 'New user attempting to access app');
+                            showRegistrationForm();
+                            const appContainer = document.getElementById('appContainer');
+                            if (appContainer) appContainer.style.display = 'none';
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('❌ Error checking registration by email:', error);
+                        logRegistrationAudit(uid, userEmail, 'system_error', 'Email lookup failed: ' + error.message);
+                        showRegistrationForm();
+                        const appContainer = document.getElementById('appContainer');
+                        if (appContainer) appContainer.style.display = 'none';
+                    });
             }
         })
         .catch((error) => {
-            console.error('❌ Error checking registration:', error);
-            // Default: show registration form for new users
+            console.error('❌ Error checking registration by UID:', error);
+            logRegistrationAudit(uid, userEmail, 'system_error', 'UID lookup failed: ' + error.message);
             showRegistrationForm();
+            const appContainer = document.getElementById('appContainer');
+            if (appContainer) appContainer.style.display = 'none';
         });
 }
 
 function showRegistrationForm() {
     const loginScreen = document.getElementById('loginScreen');
     const regScreen = document.getElementById('registrationScreen');
+    const appContainer = document.getElementById('appContainer');
 
     if (loginScreen) loginScreen.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'none'; // STRICT MODE: Hide app
+
     if (regScreen) {
         regScreen.style.display = 'flex';
+
+        // Add REQUIRED message
+        let regHeader = document.querySelector('#registrationScreen h2');
+        if (regHeader && !regHeader.textContent.includes('REQUIRED')) {
+            regHeader.innerHTML = '📝 Registration Required<br><span style="font-size: 12px; font-weight: normal; color: #f44336;">⚠️ You must complete registration to access the app</span>';
+        }
+
         // Pre-fill name if available
         const nameInput = document.getElementById('regName');
         if (nameInput && window.currentMember?.name) {
@@ -4420,7 +4475,23 @@ function showRegistrationForm() {
     }
 }
 
-function completeRegistration() {
+// Audit log function for registration activities
+function logRegistrationAudit(userId, email, status, details) {
+    const auditLog = {
+        userId: userId,
+        email: email,
+        status: status, // 'success', 'duplicate_email', 'rate_limit', 'validation_error', 'system_error'
+        details: details,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        ipInfo: 'client-side' // Client-side audit only
+    };
+
+    db.collection('registrationAuditLogs').add(auditLog)
+        .catch(err => console.error('Failed to log audit:', err));
+}
+
+async function completeRegistration() {
     const name = document.getElementById('regName').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
     const gender = document.getElementById('regGender').value.trim();
@@ -4431,18 +4502,80 @@ function completeRegistration() {
     if (!name) {
         regError.textContent = '❌ Please enter your full name';
         regError.style.display = 'block';
+        logRegistrationAudit(window.currentMember?.uid, window.currentMember?.email, 'validation_error', 'Missing name');
         return;
     }
 
     if (!phone || phone.length < 10) {
         regError.textContent = '❌ Please enter a valid phone number (10 digits)';
         regError.style.display = 'block';
+        logRegistrationAudit(window.currentMember?.uid, window.currentMember?.email, 'validation_error', 'Invalid phone: ' + phone);
         return;
     }
 
     if (!window.currentMember?.uid) {
         regError.textContent = '❌ User ID not found. Please login again.';
         regError.style.display = 'block';
+        logRegistrationAudit(null, 'unknown', 'validation_error', 'Missing user ID');
+        return;
+    }
+
+    // Rate limiting: Check if user already registered in last 24 hours
+    const lastRegTime = localStorage.getItem('lastRegTime_' + window.currentMember.uid);
+    if (lastRegTime) {
+        const timeSinceLastReg = Date.now() - parseInt(lastRegTime);
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        if (timeSinceLastReg < oneDayMs) {
+            regError.textContent = '⏳ You can only register once per 24 hours. Please try again later.';
+            regError.style.display = 'block';
+            logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'rate_limit', 'Attempted re-registration within 24 hours');
+            return;
+        }
+    }
+
+    // Check for duplicate email registration
+    try {
+        const existingEmail = await db.collection('registrations')
+            .where('email', '==', window.currentMember.email)
+            .get();
+
+        if (!existingEmail.empty) {
+            // Email exists - update registration with new UID if different
+            const existingDoc = existingEmail.docs[0];
+            const existingData = existingDoc.data();
+
+            if (existingDoc.id !== window.currentMember.uid) {
+                // UID changed - update old registration with new UID
+                console.log('🔄 Migrating registration from old UID to new UID');
+                await db.collection('registrations').doc(window.currentMember.uid).set({
+                    ...existingData,
+                    uid: window.currentMember.uid,
+                    name: name,
+                    phone: phone,
+                    gender: gender || '',
+                    dob: dob || ''
+                });
+                logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'success', 'Registration migrated from old UID');
+                showNotification(`✅ Welcome ${name}! Registration updated.`);
+                setTimeout(() => {
+                    showApp();
+                }, 500);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking duplicate email:', error);
+        regError.textContent = '❌ Error validating registration: ' + error.message;
+        regError.style.display = 'block';
+        logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'system_error', 'Duplicate check failed: ' + error.message);
+        return;
+    }
+
+    // Validate email is not null (required for duplicate detection)
+    if (!window.currentMember.email || window.currentMember.email === 'null' || window.currentMember.email === '') {
+        regError.textContent = '❌ Email is required. Please sign in with a valid Google account.';
+        regError.style.display = 'block';
+        logRegistrationAudit(window.currentMember.uid, 'null-email', 'validation_error', 'Registration blocked: no email');
         return;
     }
 
@@ -4461,19 +4594,38 @@ function completeRegistration() {
 
     db.collection('registrations').doc(window.currentMember.uid).set(registration)
         .then(() => {
-            console.log('✅ Registration completed');
-            showNotification(`✅ Welcome ${name}! Registration complete.`);
+            console.log('✅ Registration completed - STRICT MODE: Unlocking app');
+            // Set rate limit timestamp
+            localStorage.setItem('lastRegTime_' + window.currentMember.uid, Date.now().toString());
+
+            // Log successful registration
+            logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'success', `Registered: ${name}, Phone: ${phone}`);
+
+            // Hide registration form
+            const regScreen = document.getElementById('registrationScreen');
+            if (regScreen) regScreen.style.display = 'none';
+
+            showNotification(`✅ Welcome ${name}! Registration complete. Accessing app...`);
 
             // Update currentMember with full details
             window.currentMember.name = name;
             window.currentMember.phone = phone;
             window.currentMember.gender = gender;
 
-            showApp();
+            // Delay slightly to show notification, then unlock app
+            setTimeout(() => {
+                showApp();
+            }, 500);
         })
         .catch((error) => {
             console.error('❌ Error saving registration:', error);
-            regError.textContent = '❌ Error saving registration: ' + error.message;
+            logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'system_error', 'Save failed: ' + error.message);
+
+            if (error.code === 'permission-denied') {
+                regError.textContent = '❌ Registration failed. Please try again.';
+            } else {
+                regError.textContent = '❌ Error saving registration: ' + error.message;
+            }
             regError.style.display = 'block';
         });
 }
@@ -4506,4 +4658,196 @@ Please share this for donations and offerings.
             alert('Bank Details:\n\n' + bankDetails);
         });
     }
+}
+
+// ===== PRAYERS & FEEDBACK TABS =====
+function switchPrayerTab(tab) {
+    const prayersTab = document.getElementById('prayersTab');
+    const feedbackTab = document.getElementById('feedbackTab');
+    const tabPrayers = document.getElementById('tabPrayers');
+    const tabFeedback = document.getElementById('tabFeedback');
+
+    if (tab === 'prayers') {
+        prayersTab.style.display = 'block';
+        feedbackTab.style.display = 'none';
+        tabPrayers.style.background = '#F44336';
+        tabPrayers.style.color = 'white';
+        tabFeedback.style.background = '#f0f0f0';
+        tabFeedback.style.color = '#333';
+        loadPrayerRealtime();
+    } else if (tab === 'feedback') {
+        prayersTab.style.display = 'none';
+        feedbackTab.style.display = 'block';
+        tabPrayers.style.background = '#f0f0f0';
+        tabPrayers.style.color = '#333';
+        tabFeedback.style.background = '#FF9800';
+        tabFeedback.style.color = 'white';
+    }
+}
+
+function refreshPrayerOrFeedback() {
+    const feedbackTab = document.getElementById('feedbackTab');
+    if (feedbackTab.style.display === 'none') {
+        loadPrayerRealtime();
+    }
+}
+
+// ===== PRAYER SUBMISSION =====
+function submitPrayer() {
+    const name = document.getElementById('prayerName').value.trim();
+    const title = document.getElementById('prayerTitle').value.trim();
+    const message = document.getElementById('prayerMessage').value.trim();
+    const statusDiv = document.getElementById('prayerStatus');
+
+    if (!name) {
+        statusDiv.textContent = '❌ Please enter your name';
+        statusDiv.style.display = 'block';
+        return;
+    }
+
+    if (!title) {
+        statusDiv.textContent = '❌ Please enter what you are praying for';
+        statusDiv.style.display = 'block';
+        return;
+    }
+
+    if (!message) {
+        statusDiv.textContent = '❌ Please enter your prayer message';
+        statusDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        // Send prayer to Pastor David's WhatsApp
+        const pastorWhatsAppNumber = '919986012000'; // +91 99860 12000
+
+        // Build message with proper formatting
+        let whatsappText = 'Prayer Request from Church App\n\n';
+        whatsappText += 'From: ' + name + '\n';
+        whatsappText += 'Prayer For: ' + title + '\n';
+        whatsappText += 'Message: ' + message + '\n\n';
+        whatsappText += 'Please pray for this request.';
+
+        const encodedMessage = encodeURIComponent(whatsappText);
+        const whatsappURL = `https://wa.me/${pastorWhatsAppNumber}?text=${encodedMessage}`;
+
+        console.log('Opening WhatsApp URL:', whatsappURL);
+
+        // Show success message
+        statusDiv.textContent = '✅ Opening WhatsApp to send prayer...';
+        statusDiv.style.color = '#4CAF50';
+        statusDiv.style.display = 'block';
+
+        // Delay to ensure status message shows
+        setTimeout(() => {
+            // Open WhatsApp
+            window.open(whatsappURL, '_blank', 'noopener,noreferrer');
+        }, 500);
+
+        // Clear form after delay
+        setTimeout(() => {
+            document.getElementById('prayerName').value = '';
+            document.getElementById('prayerTitle').value = '';
+            document.getElementById('prayerMessage').value = '';
+            statusDiv.style.display = 'none';
+            statusDiv.style.color = '#f44336';
+            showNotification('🙏 Prayer sent! Check WhatsApp to confirm sending.');
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error sending prayer:', error);
+        statusDiv.textContent = '❌ Error opening WhatsApp. Please try again.';
+        statusDiv.style.display = 'block';
+    }
+}
+
+// ===== FEEDBACK SYSTEM =====
+function submitFeedback() {
+    const name = document.getElementById('feedbackName').value.trim();
+    const type = document.getElementById('feedbackType').value.trim();
+    const message = document.getElementById('feedbackMessage').value.trim();
+    const statusDiv = document.getElementById('feedbackStatus');
+
+    if (!name) {
+        statusDiv.textContent = '❌ Please enter your name';
+        statusDiv.style.display = 'block';
+        return;
+    }
+
+    if (!message) {
+        statusDiv.textContent = '❌ Please enter your feedback message';
+        statusDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        // Send directly to Pastor David's WhatsApp
+        const pastorWhatsAppNumber = '919986012000'; // +91 99860 12000
+
+        // Build message with proper formatting
+        let whatsappText = 'Feedback from Church App\n\n';
+        whatsappText += 'Name: ' + name + '\n';
+        if (type) {
+            whatsappText += 'Type: ' + type + '\n';
+        }
+        whatsappText += 'Message: ' + message;
+
+        const encodedMessage = encodeURIComponent(whatsappText);
+        const whatsappURL = `https://wa.me/${pastorWhatsAppNumber}?text=${encodedMessage}`;
+
+        console.log('Opening WhatsApp URL:', whatsappURL);
+
+        // Show success message
+        statusDiv.textContent = '✅ Opening WhatsApp to send feedback...';
+        statusDiv.style.color = '#4CAF50';
+        statusDiv.style.display = 'block';
+
+        // Delay to ensure status message shows
+        setTimeout(() => {
+            // Open WhatsApp
+            window.open(whatsappURL, '_blank', 'noopener,noreferrer');
+        }, 500);
+
+        // Clear form after delay
+        setTimeout(() => {
+            document.getElementById('feedbackName').value = '';
+            document.getElementById('feedbackType').value = '';
+            document.getElementById('feedbackMessage').value = '';
+            statusDiv.style.display = 'none';
+            statusDiv.style.color = '#f44336';
+            showNotification('💬 Feedback sent! Check WhatsApp to confirm sending.');
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error sending feedback:', error);
+        statusDiv.textContent = '❌ Error opening WhatsApp. Please try again.';
+        statusDiv.style.display = 'block';
+    }
+}
+
+// ===== PRAYER SHARING TO WHATSAPP =====
+function sharePrayerToWhatsApp(prayerId, prayerText, prayerName) {
+    // Pastor David's WhatsApp number
+    const pastorWhatsAppNumber = '919986012000'; // +91 99860 12000
+
+    // Create WhatsApp message
+    const message = `🙏 *Prayer Request from Whitefield Methodist Church*\n\n*From:* ${window.currentMember?.name || 'A member'}\n*Prayer:* ${prayerName || 'General Prayer'}\n*Details:* ${prayerText}\n\nPlease pray for this request.`;
+
+    // Encode message for URL
+    const encodedMessage = encodeURIComponent(message);
+
+    // WhatsApp Web URL (works on desktop and mobile)
+    const whatsappURL = `https://wa.me/${pastorWhatsAppNumber}?text=${encodedMessage}`;
+
+    // Open WhatsApp
+    if (navigator.userAgent.match(/mobile|android|iphone|iPad|iPod/i)) {
+        // On mobile, try to open WhatsApp app first
+        window.location.href = `https://api.whatsapp.com/send?phone=${pastorWhatsAppNumber}&text=${encodedMessage}`;
+    } else {
+        // On desktop, open WhatsApp Web
+        window.open(whatsappURL, '_blank');
+    }
+
+    showNotification('📱 Opening WhatsApp to share prayer...');
+    console.log('Prayer shared to WhatsApp:', { prayerId, prayerName });
 }

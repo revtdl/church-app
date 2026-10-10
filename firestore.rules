@@ -71,9 +71,22 @@ service cloud.firestore {
 
     // User registrations - member profiles
     match /registrations/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null || true;  // Allow authenticated AND public reads
       allow create, update: if true;
-      allow delete: if false;
+      allow delete: if request.auth != null;  // Allow authenticated users (admin portal) to delete
+    }
+
+    // Registration audit logs - track all registration attempts
+    match /registrationAuditLogs/{document=**} {
+      allow read: if request.auth != null;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // YouTube links collection - everyone can read, authenticated can write
+    match /youtubeLinks/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
     }
   }
 }

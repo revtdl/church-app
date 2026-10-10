@@ -55,3 +55,20 @@ async function deletePrayer(id) {
         alert('❌ Error deleting prayer: ' + error.message);
     }
 }
+
+// Delete Registered Member (from registrations collection)
+async function deleteRegistration(registrationId, memberName) {
+    if (!confirm(`❌ Are you sure you want to delete ${memberName}'s registration? This action cannot be undone.`)) {
+        return;
+    }
+    try {
+        await db.collection('registrations').doc(registrationId).delete();
+        alert('✅ Registration deleted!');
+        // Reload registered members list
+        if (typeof loadRegisteredMembers === 'function') {
+            loadRegisteredMembers();
+        }
+    } catch (error) {
+        alert('❌ Error deleting registration: ' + error.message);
+    }
+}

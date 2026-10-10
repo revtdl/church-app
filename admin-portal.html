@@ -695,7 +695,7 @@
     <!-- Login Section -->
     <div class="login-container" id="loginSection">
         <div style="text-align: center; margin-bottom: 30px;">
-            <div style="font-size: 48px; margin-bottom: 15px;">⛪</div>
+            <img src="logo.png" alt="Methodist Church Logo" style="height: 60px; margin-bottom: 15px;">
             <h1 style="margin: 0; color: #333; font-size: 24px;">Church Admin</h1>
             <p style="color: #999; font-size: 14px; margin-top: 5px;">Whitefield Methodist Church</p>
         </div>
@@ -730,15 +730,15 @@
     <div class="main-container" id="mainContainer">
         <!-- Sidebar -->
         <div class="sidebar">
-            <div class="sidebar-logo">⛪ Whitefield Methodist Church</div>
+            <div class="sidebar-logo"><img src="logo.png" alt="Logo" style="height: 24px; margin-right: 8px; vertical-align: middle;"> Whitefield Methodist Church</div>
 
             <div class="sidebar-menu">
                 <div class="sidebar-item active" onclick="switchMenu('members')">👥 Members</div>
                 <div class="sidebar-item" onclick="switchMenu('registeredSection')">📊 Registered Members</div>
+                <div class="sidebar-item" onclick="switchMenu('auditLogs')">📋 Audit Logs</div>
                 <div class="sidebar-item" onclick="switchMenu('announcements')">📢 Announcements</div>
                 <div class="sidebar-item" onclick="switchMenu('events')">📅 Events</div>
                 <div class="sidebar-item" onclick="switchMenu('sermons')">🎤 Sermons</div>
-                <div class="sidebar-item" onclick="switchMenu('prayers')">🙏 Prayers</div>
                 <div class="sidebar-item" onclick="switchMenu('offerings')">💝 Offerings</div>
                 <div class="sidebar-item" onclick="switchMenu('gallery')">📷 Gallery</div>
                 <div class="sidebar-item" onclick="logout()" style="color: #ff6b6b; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">🚪 Logout</div>
@@ -930,7 +930,7 @@
                 </div>
 
                 <!-- Registered Members Section -->
-                <div id="registeredSection" class="section" style="display: none; padding: 20px;">
+                <div id="registeredSection" class="section" style="padding: 20px;">
                     <div class="page-header">
                         <div class="page-title">📊 Registered Members Dashboard</div>
                         <div class="controls">
@@ -981,6 +981,58 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Audit Logs Section -->
+                <div id="auditLogs" class="section" style="padding: 20px;">
+                    <div class="page-header">
+                        <div class="page-title">📋 Registration Audit Logs</div>
+                        <div class="controls">
+                            <input type="text" id="auditSearchInput" class="search-input" placeholder="Search by email..." onkeyup="searchAuditLogs()" style="flex: 1; min-width: 200px;">
+                            <select id="auditFilterStatus" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-left: 10px; font-size: 13px;" onchange="filterAuditLogs()">
+                                <option value="">All Statuses</option>
+                                <option value="success">✅ Success</option>
+                                <option value="duplicate_email">⚠️ Duplicate Email</option>
+                                <option value="rate_limit">⏳ Rate Limited</option>
+                                <option value="validation_error">❌ Validation Error</option>
+                                <option value="system_error">🔴 System Error</option>
+                            </select>
+                            <button onclick="loadAuditLogs()" style="background: #2196F3; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px; font-size: 12px;">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div id="auditSuccessCount" style="font-size: 24px; font-weight: bold;">0</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Successful</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div id="auditFailureCount" style="font-size: 24px; font-weight: bold;">0</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Failed Attempts</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #2196F3 0%, #1976d2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div id="auditTotalCount" style="font-size: 24px; font-weight: bold;">0</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Total Attempts</div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Logs Table -->
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Email</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Details</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogsTable">
+                                <tr><td colspan="4" style="text-align: center; padding: 30px; color: #999;">Loading audit logs...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -1048,28 +1100,38 @@
                             <tr><td colspan="4" style="text-align: center; padding: 30px;">Loading...</td></tr>
                         </tbody>
                     </table>
-                </div>
 
-                <!-- Prayers Section -->
-                <div id="prayers" class="section">
-                    <div class="page-header">
-                        <div class="page-title">Prayers</div>
-                        <div class="controls">
-                            <button class="filter-btn">Filter ⏬</button>
-                            <input type="text" class="search-input" placeholder="Search...">
-                            <div class="action-buttons">
-                                <button class="btn-primary" onclick="openPrayerForm()">+ Add Prayer</button>
+                    <!-- YouTube Links Subsection -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                        <div style="font-weight: 600; font-size: 16px; margin-bottom: 16px; color: #333;">📺 YouTube Sermon Links</div>
+
+                        <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ddd;">
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px;">Sermon Title</label>
+                                <input type="text" id="youtubeTitle" placeholder="e.g., Sunday Sermon - Grace and Faith" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
                             </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px;">YouTube Link</label>
+                                <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+                            </div>
+
+                            <button onclick="addYoutubeLink()" style="background: #FF0000; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">+ Add YouTube Link</button>
                         </div>
+
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f5f5f5;">
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd; font-size: 13px;">Title</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd; font-size: 13px;">Link</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd; font-size: 13px; width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="youtubeLinksTable">
+                                <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999; border: 1px solid #ddd;">Loading...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <table>
-                        <thead>
-                            <tr><th>Title</th><th>Content</th><th>Action</th></tr>
-                        </thead>
-                        <tbody id="prayersTable">
-                            <tr><td colspan="3" style="text-align: center; padding: 30px;">Loading...</td></tr>
-                        </tbody>
-                    </table>
                 </div>
 
                 <!-- Offerings Section -->
@@ -1420,8 +1482,8 @@
 
     <!-- Scripts -->
     <script src="js/firebase-config.js"></script>
-    <script src="js/admin-app.js?v=20261003"></script>
-    <script src="js/admin-app-delete.js"></script>
+    <script src="js/admin-app.js?v=20261055"></script>
+    <script src="js/admin-app-delete.js?v=20261055"></script>
     <script src="js/excel-upload.js"></script>
     <script>
         function switchMenu(section) {
@@ -1433,10 +1495,10 @@
             // Load data for each section
             if (section === 'members') loadMembers();
             else if (section === 'registeredSection') loadRegisteredMembers();
+            else if (section === 'auditLogs') loadAuditLogs();
             else if (section === 'announcements') loadAnnouncements();
             else if (section === 'events') loadEvents();
-            else if (section === 'sermons') loadSermons();
-            else if (section === 'prayers') loadPrayers();
+            else if (section === 'sermons') { loadSermons(); loadYoutubeLinks(); }
             else if (section === 'offerings') loadOfferings();
             else if (section === 'gallery') loadGalleryPhotos();
         }
@@ -2140,6 +2202,80 @@
             loadRegisteredMembers(); // Load registered members too
         });
 
+        // ===== AUDIT LOGS FUNCTIONS =====
+        function loadAuditLogs() {
+            console.log('Loading audit logs...');
+            const table = document.getElementById('auditLogsTable');
+            if (!table) return;
+
+            table.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px; color: #999;">Loading...</td></tr>';
+
+            db.collection('registrationAuditLogs').orderBy('timestamp', 'desc').limit(500).get()
+                .then((snapshot) => {
+                    if (snapshot.empty) {
+                        table.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px; color: #999;">No audit logs yet</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    let successCount = 0, totalCount = 0;
+
+                    snapshot.forEach((doc) => {
+                        const log = doc.data();
+                        totalCount++;
+                        if (log.status === 'success') successCount++;
+
+                        const timestamp = new Date(log.timestamp).toLocaleString('en-IN');
+                        const statusEmoji = {
+                            'success': '✅',
+                            'duplicate_email': '⚠️',
+                            'rate_limit': '⏳',
+                            'validation_error': '❌',
+                            'system_error': '🔴'
+                        }[log.status] || '❓';
+
+                        html += `<tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px;"><strong>${statusEmoji} ${log.status.replace(/_/g, ' ')}</strong></td>
+                            <td style="padding: 12px; font-size: 12px;">${log.email || 'N/A'}</td>
+                            <td style="padding: 12px; font-size: 12px;">${log.details}</td>
+                            <td style="padding: 12px; font-size: 12px; white-space: nowrap;">${timestamp}</td>
+                        </tr>`;
+                    });
+
+                    table.innerHTML = html;
+                    document.getElementById('auditSuccessCount').textContent = successCount;
+                    document.getElementById('auditFailureCount').textContent = totalCount - successCount;
+                    document.getElementById('auditTotalCount').textContent = totalCount;
+                })
+                .catch(err => {
+                    console.error('Error loading audit logs:', err);
+                    table.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 30px; color: #f44336;">Error loading logs: ${err.message}</td></tr>`;
+                });
+        }
+
+        function searchAuditLogs() {
+            const input = document.getElementById('auditSearchInput').value.toLowerCase();
+            const rows = document.getElementById('auditLogsTable').getElementsByTagName('tr');
+            Array.from(rows).forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        function filterAuditLogs() {
+            const statusFilter = document.getElementById('auditFilterStatus').value;
+            const rows = document.getElementById('auditLogsTable').getElementsByTagName('tr');
+
+            Array.from(rows).forEach(row => {
+                if (!statusFilter) {
+                    row.style.display = '';
+                } else {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(statusFilter) ? '' : 'none';
+                }
+            });
+        }
+
         // ===== REGISTERED MEMBERS FUNCTIONS =====
         function loadRegisteredMembers() {
             console.log('Loading registered members...');
@@ -2188,7 +2324,7 @@
                             <td style="padding: 12px; font-size: 12px;">${regDateStr}</td>
                             <td style="padding: 12px; text-align: center;">
                                 <button onclick="viewMember('${doc.id}')" style="background: #2196F3; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 3px;">View</button>
-                                <button onclick="deleteMember('${doc.id}', '${m.name}')" style="background: #f44336; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
+                                <button onclick="deleteRegistration('${doc.id}', '${m.name}')" style="background: #f44336; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
                             </td>
                         </tr>`;
                         index++;
@@ -2244,6 +2380,90 @@
                 a.click();
                 showAdminNotification('✅ Members exported!');
             });
+        }
+
+        // ===== YOUTUBE LINKS MANAGEMENT =====
+        function loadYoutubeLinks() {
+            const table = document.getElementById('youtubeLinksTable');
+            if (!db) {
+                table.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">Database not ready</td></tr>';
+                return;
+            }
+
+            table.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">Loading...</td></tr>';
+
+            db.collection('youtubeLinks').orderBy('createdAt', 'desc').get()
+                .then((snapshot) => {
+                    if (snapshot.empty) {
+                        table.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">No YouTube links added yet</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    snapshot.forEach((doc) => {
+                        const link = doc.data();
+                        html += `<tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px;">${link.title || 'Untitled'}</td>
+                            <td style="padding: 12px; font-size: 12px;"><a href="${link.url}" target="_blank" style="color: #1976d2; text-decoration: none; word-break: break-all;">${link.url}</a></td>
+                            <td style="padding: 12px; text-align: center;">
+                                <button onclick="deleteYoutubeLink('${doc.id}', '${link.title || 'Link'}')" style="background: #f44336; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
+                            </td>
+                        </tr>`;
+                    });
+
+                    table.innerHTML = html;
+                })
+                .catch(err => console.error('Error loading YouTube links:', err));
+        }
+
+        function addYoutubeLink() {
+            const title = document.getElementById('youtubeTitle').value.trim();
+            const url = document.getElementById('youtubeUrl').value.trim();
+
+            if (!title) {
+                alert('❌ Please enter sermon title');
+                return;
+            }
+
+            if (!url) {
+                alert('❌ Please enter YouTube link');
+                return;
+            }
+
+            if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+                alert('❌ Please enter a valid YouTube link');
+                return;
+            }
+
+            if (!db) {
+                alert('❌ Database not ready');
+                return;
+            }
+
+            db.collection('youtubeLinks').add({
+                title: title,
+                url: url,
+                createdAt: firebase.firestore.Timestamp.now()
+            })
+            .then((doc) => {
+                console.log('✅ YouTube link added:', doc.id);
+                document.getElementById('youtubeTitle').value = '';
+                document.getElementById('youtubeUrl').value = '';
+                showAdminNotification('✅ YouTube link added!');
+                loadYoutubeLinks();
+            })
+            .catch(err => alert('❌ Error: ' + err.message));
+        }
+
+        function deleteYoutubeLink(docId, title) {
+            if (!confirm(`Delete "${title}"? Cannot undo.`)) return;
+
+            db.collection('youtubeLinks').doc(docId).delete()
+                .then(() => {
+                    showAdminNotification(`✅ ${title} deleted`);
+                    loadYoutubeLinks();
+                })
+                .catch(err => alert('Error: ' + err.message));
         }
     </script>
 </body>
