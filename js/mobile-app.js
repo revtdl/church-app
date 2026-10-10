@@ -3676,25 +3676,40 @@ function uploadGalleryPhoto() {
 }
 
 function likePhoto(index) {
-  const userName = currentMember?.name || 'guest';
+  // Use Firebase UID for unique identification (not name)
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    alert('Please sign in to like photos');
+    return;
+  }
+
+  const userId = currentUser.uid;
+  const userName = currentMember?.name || currentUser.displayName || 'User';
   const photo = galleryPhotos[index];
 
   if (!photo.likes) photo.likes = [];
+  if (!photo.likedBy) photo.likedBy = []; // Track who liked by UID
 
-  const likeIndex = photo.likes.indexOf(userName);
+  const likeIndex = photo.likedBy.indexOf(userId);
   if (likeIndex > -1) {
+    // Unlike
+    photo.likedBy.splice(likeIndex, 1);
     photo.likes.splice(likeIndex, 1);
   } else {
+    // Like
+    photo.likedBy.push(userId);
     photo.likes.push(userName);
   }
 
   // Save to Firestore
   db.collection('gallery').doc(photo.id).update({
-    likes: photo.likes
+    likes: photo.likes,
+    likedBy: photo.likedBy
   }).then(() => {
     console.log('✅ Like saved to Firestore');
   }).catch(error => {
     console.error('❌ Error saving like:', error);
+    alert('Error saving like: ' + error.message);
   });
 
   localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
@@ -3707,6 +3722,13 @@ function toggleCommentSection(index) {
 }
 
 function addComment(index) {
+  // Check authentication first
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    alert('Please sign in to comment on photos');
+    return;
+  }
+
   const input = document.getElementById(`commentInput${index}`);
   const text = input.value.trim();
   const photo = galleryPhotos[index];
@@ -3719,7 +3741,8 @@ function addComment(index) {
   if (!photo.comments) photo.comments = [];
 
   const newComment = {
-    name: currentMember?.name || 'Anonymous',
+    userId: currentUser.uid,  // Use UID for unique identification
+    name: currentMember?.name || currentUser.displayName || 'User',
     text: text,
     timestamp: new Date().toISOString()
   };
@@ -3735,7 +3758,7 @@ function addComment(index) {
     displayGalleryPhotos();
   }).catch(error => {
     console.error('❌ Error saving comment:', error);
-    alert('Failed to save comment');
+    alert('Failed to save comment: ' + error.message);
   });
 
   localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
