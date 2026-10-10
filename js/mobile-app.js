@@ -229,10 +229,15 @@ function googleSignIn() {
             localStorage.setItem('googleLogin', 'true');
             localStorage.setItem('memberEmail', result.user.email);
             localStorage.setItem('memberName', result.user.displayName || result.user.email);
+
+            // Log successful login
+            logLoginAttempt(result.user, 'success', 'Google Sign-in');
+
             showApp();
         })
         .catch((error) => {
             console.error('❌ Google Sign-in error:', error);
+            logLoginAttempt({ displayName: 'Unknown', email: 'Unknown' }, 'failed', error.message);
             showLoginError('❌ Google Sign-in failed: ' + error.message);
         });
 }
@@ -311,6 +316,11 @@ function showApp() {
     const headerName = document.getElementById('headerMemberName');
     if (headerName && window.currentMember) {
         headerName.textContent = `👤 ${window.currentMember.name}`;
+    }
+
+    // Track active user
+    if (window.currentMember) {
+        updateActiveUsers(window.currentMember);
     }
 
     console.log('App container shown');
@@ -4317,6 +4327,53 @@ function saveDonationToFirebase(paymentResponse) {
         .catch((error) => {
             console.error('❌ Error saving donation:', error);
             showNotification('❌ Error saving donation: ' + error.message);
+        });
+}
+
+// ===== LOGIN TRACKING =====
+function logLoginAttempt(user, status, method) {
+    if (!db) return;
+
+    const loginLog = {
+        userName: user.displayName || user.name || 'Unknown',
+        userEmail: user.email || 'Unknown',
+        userId: user.uid || 'Anonymous',
+        status: status, // 'success' or 'failed'
+        method: method, // 'Google Sign-in', 'Email', etc.
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleDateString('en-IN'),
+        time: new Date().toLocaleTimeString('en-IN'),
+        deviceInfo: navigator.userAgent.substring(0, 100),
+        ipInfo: 'Browser-based' // Note: IP not available in browser
+    };
+
+    db.collection('loginLogs').add(loginLog)
+        .then((docRef) => {
+            console.log('✅ Login logged:', docRef.id);
+        })
+        .catch((error) => {
+            console.error('❌ Error logging login:', error);
+        });
+}
+
+function updateActiveUsers(user) {
+    if (!db || !user) return;
+
+    const activeUserRef = db.collection('activeUsers').doc(user.uid);
+
+    activeUserRef.set({
+        name: user.displayName || user.name || 'Unknown',
+        email: user.email,
+        uid: user.uid,
+        lastLogin: new Date().toISOString(),
+        status: 'online',
+        loginCount: firebase.firestore.FieldValue.increment(1)
+    }, { merge: true })
+        .then(() => {
+            console.log('✅ User activity updated');
+        })
+        .catch((error) => {
+            console.error('❌ Error updating user activity:', error);
         });
 }
 

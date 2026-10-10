@@ -54,5 +54,19 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if false;
     }
+
+    // Login tracking - for audit trail
+    match /loginLogs/{document=**} {
+      allow read: if request.auth != null;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // Active users tracking
+    match /activeUsers/{document=**} {
+      allow read: if request.auth != null;
+      allow create, update: if true;
+      allow delete: if false;
+    }
   }
 }
