@@ -4319,4 +4319,3 @@ function saveDonationToFirebase(paymentResponse) {
             showNotification('❌ Error saving donation: ' + error.message);
         });
 }
-}
