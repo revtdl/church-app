@@ -734,6 +734,7 @@
 
             <div class="sidebar-menu">
                 <div class="sidebar-item active" onclick="switchMenu('members')">👥 Members</div>
+                <div class="sidebar-item" onclick="switchMenu('registeredSection')">📊 Registered Members</div>
                 <div class="sidebar-item" onclick="switchMenu('announcements')">📢 Announcements</div>
                 <div class="sidebar-item" onclick="switchMenu('events')">📅 Events</div>
                 <div class="sidebar-item" onclick="switchMenu('sermons')">🎤 Sermons</div>
@@ -921,6 +922,61 @@
                                     </tr>
                                 </thead>
                                 <tbody id="membersTable">
+                                    <tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">Loading members...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Members Section -->
+                <div id="registeredSection" class="section" style="display: none;">
+                    <div class="page-header">
+                        <div class="page-title">📊 Registered Members Dashboard</div>
+                        <div class="controls">
+                            <input type="text" id="memberSearchInput" class="search-input" placeholder="Search by name or phone..." onkeyup="searchMembers()" style="flex: 1; min-width: 200px;">
+                            <button class="btn-primary" onclick="exportMembersCSV()" style="background: #4CAF50; margin-left: 10px;">📥 Export CSV</button>
+                            <button class="btn-primary" onclick="loadRegisteredMembers()" style="background: #2196F3; margin-left: 5px;">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Dashboard -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 32px; font-weight: bold;" id="totalMembers">0</div>
+                            <div style="font-size: 13px; opacity: 0.9;">Total Registered</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 32px; font-weight: bold;" id="todayRegistered">0</div>
+                            <div style="font-size: 13px; opacity: 0.9;">Registered Today</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 32px; font-weight: bold;" id="thisWeek">0</div>
+                            <div style="font-size: 13px; opacity: 0.9;">This Week</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 32px; font-weight: bold;" id="maleCount">0</div>
+                            <div style="font-size: 13px; opacity: 0.9;">Male Members</div>
+                        </div>
+                    </div>
+
+                    <!-- Members Table -->
+                    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f3f4f6; border-bottom: 2px solid #ddd;">
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">#</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">Name</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">Email</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">Phone</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">Gender</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">DOB</th>
+                                        <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 13px;">Registered</th>
+                                        <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registeredMembersTable">
                                     <tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">Loading members...</td></tr>
                                 </tbody>
                             </table>
@@ -2080,7 +2136,106 @@
         // Load members when page first loads
         document.addEventListener('DOMContentLoaded', function() {
             loadMembers();
+            loadRegisteredMembers(); // Load registered members too
         });
+
+        // ===== REGISTERED MEMBERS FUNCTIONS =====
+        function loadRegisteredMembers() {
+            if (!db) return;
+            const table = document.getElementById('registeredMembersTable');
+            if (!table) return;
+
+            table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">Loading...</td></tr>';
+
+            db.collection('registrations').orderBy('registeredOn', 'desc').limit(100).get()
+                .then((snapshot) => {
+                    if (snapshot.empty) {
+                        table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">No registered members yet</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    let index = 1;
+                    let todayCount = 0, thisWeekCount = 0, maleCount = 0;
+                    const today = new Date().toDateString();
+                    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+                    snapshot.forEach((doc) => {
+                        const m = doc.data();
+                        const regDate = new Date(m.registeredOn);
+                        const regDateStr = regDate.toLocaleDateString('en-IN');
+
+                        if (regDate.toDateString() === today) todayCount++;
+                        if (regDate > oneWeekAgo) thisWeekCount++;
+                        if (m.gender === 'Male') maleCount++;
+
+                        html += `<tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px;">${index}</td>
+                            <td style="padding: 12px;"><strong>${m.name}</strong></td>
+                            <td style="padding: 12px; font-size: 12px;">${m.email}</td>
+                            <td style="padding: 12px;"><a href="tel:${m.phone}" style="color: #1976d2; text-decoration: none;">${m.phone}</a></td>
+                            <td style="padding: 12px;">${m.gender || '-'}</td>
+                            <td style="padding: 12px;">${m.dob || '-'}</td>
+                            <td style="padding: 12px; font-size: 12px;">${regDateStr}</td>
+                            <td style="padding: 12px; text-align: center;">
+                                <button onclick="viewMember('${doc.id}')" style="background: #2196F3; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 3px;">View</button>
+                                <button onclick="deleteMember('${doc.id}', '${m.name}')" style="background: #f44336; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
+                            </td>
+                        </tr>`;
+                        index++;
+                    });
+
+                    table.innerHTML = html;
+                    document.getElementById('totalMembers').textContent = snapshot.size;
+                    document.getElementById('todayRegistered').textContent = todayCount;
+                    document.getElementById('thisWeek').textContent = thisWeekCount;
+                    document.getElementById('maleCount').textContent = maleCount;
+                })
+                .catch(err => console.error('Error:', err));
+        }
+
+        function searchMembers() {
+            const input = document.getElementById('memberSearchInput').value.toLowerCase();
+            const rows = document.getElementById('registeredMembersTable').getElementsByTagName('tr');
+            Array.from(rows).forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        function viewMember(uid) {
+            db.collection('registrations').doc(uid).get().then(doc => {
+                if (doc.exists) {
+                    const m = doc.data();
+                    alert(`Name: ${m.name}\nEmail: ${m.email}\nPhone: ${m.phone}\nGender: ${m.gender || '-'}\nDOB: ${m.dob || '-'}\nRegistered: ${new Date(m.registeredOn).toLocaleString('en-IN')}`);
+                }
+            });
+        }
+
+        function deleteMember(uid, name) {
+            if (!confirm(`Delete ${name}? Cannot undo.`)) return;
+            db.collection('registrations').doc(uid).delete().then(() => {
+                showAdminNotification(`✅ ${name} deleted`);
+                loadRegisteredMembers();
+            }).catch(err => alert('Error: ' + err.message));
+        }
+
+        function exportMembersCSV() {
+            db.collection('registrations').get().then(snapshot => {
+                let csv = 'Name,Email,Phone,Gender,DOB,Registered Date\n';
+                snapshot.forEach(doc => {
+                    const m = doc.data();
+                    csv += `"${m.name}","${m.email}","${m.phone}","${m.gender || '-'}","${m.dob || '-'}","${new Date(m.registeredOn).toLocaleDateString('en-IN')}"\n`;
+                });
+                const blob = new Blob([csv], {type: 'text/csv'});
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'church-members-' + new Date().toDateString() + '.csv';
+                a.click();
+                showAdminNotification('✅ Members exported!');
+            });
+        }
     </script>
 </body>
 </html>
