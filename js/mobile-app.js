@@ -4491,7 +4491,17 @@ function logRegistrationAudit(userId, email, status, details) {
         .catch(err => console.error('Failed to log audit:', err));
 }
 
+// Prevent double submission
+let isSubmittingRegistration = false;
+
 async function completeRegistration() {
+    // Prevent double submission
+    if (isSubmittingRegistration) {
+        console.log('⚠️ Registration already in progress, ignoring duplicate submission');
+        return;
+    }
+    isSubmittingRegistration = true;
+
     const name = document.getElementById('regName').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
     const gender = document.getElementById('regGender').value.trim();
@@ -4503,6 +4513,7 @@ async function completeRegistration() {
         regError.textContent = '❌ Please enter your full name';
         regError.style.display = 'block';
         logRegistrationAudit(window.currentMember?.uid, window.currentMember?.email, 'validation_error', 'Missing name');
+        isSubmittingRegistration = false;
         return;
     }
 
@@ -4510,6 +4521,7 @@ async function completeRegistration() {
         regError.textContent = '❌ Please enter a valid phone number (10 digits)';
         regError.style.display = 'block';
         logRegistrationAudit(window.currentMember?.uid, window.currentMember?.email, 'validation_error', 'Invalid phone: ' + phone);
+        isSubmittingRegistration = false;
         return;
     }
 
@@ -4517,6 +4529,7 @@ async function completeRegistration() {
         regError.textContent = '❌ User ID not found. Please login again.';
         regError.style.display = 'block';
         logRegistrationAudit(null, 'unknown', 'validation_error', 'Missing user ID');
+        isSubmittingRegistration = false;
         return;
     }
 
@@ -4559,6 +4572,7 @@ async function completeRegistration() {
                 showNotification(`✅ Welcome ${name}! Registration updated.`);
                 setTimeout(() => {
                     showApp();
+                    isSubmittingRegistration = false;
                 }, 500);
                 return;
             }
@@ -4568,6 +4582,7 @@ async function completeRegistration() {
         regError.textContent = '❌ Error validating registration: ' + error.message;
         regError.style.display = 'block';
         logRegistrationAudit(window.currentMember.uid, window.currentMember.email, 'system_error', 'Duplicate check failed: ' + error.message);
+        isSubmittingRegistration = false;
         return;
     }
 
@@ -4576,6 +4591,7 @@ async function completeRegistration() {
         regError.textContent = '❌ Email is required. Please sign in with a valid Google account.';
         regError.style.display = 'block';
         logRegistrationAudit(window.currentMember.uid, 'null-email', 'validation_error', 'Registration blocked: no email');
+        isSubmittingRegistration = false;
         return;
     }
 
@@ -4615,6 +4631,7 @@ async function completeRegistration() {
             // Delay slightly to show notification, then unlock app
             setTimeout(() => {
                 showApp();
+                isSubmittingRegistration = false;
             }, 500);
         })
         .catch((error) => {
@@ -4627,6 +4644,7 @@ async function completeRegistration() {
                 regError.textContent = '❌ Error saving registration: ' + error.message;
             }
             regError.style.display = 'block';
+            isSubmittingRegistration = false;
         });
 }
 

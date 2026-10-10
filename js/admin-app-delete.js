@@ -62,13 +62,23 @@ async function deleteRegistration(registrationId, memberName) {
         return;
     }
     try {
+        console.log('🗑️ Deleting registration:', registrationId);
         await db.collection('registrations').doc(registrationId).delete();
+        console.log('✅ Registration deleted successfully');
         alert('✅ Registration deleted!');
-        // Reload registered members list
-        if (typeof loadRegisteredMembers === 'function') {
-            loadRegisteredMembers();
-        }
+
+        // Reload registered members list - with fallback to page reload
+        setTimeout(() => {
+            if (typeof loadRegisteredMembers === 'function') {
+                console.log('Reloading registered members...');
+                loadRegisteredMembers();
+            } else {
+                console.log('loadRegisteredMembers not found, reloading page');
+                location.reload();
+            }
+        }, 500);
     } catch (error) {
+        console.error('❌ Error deleting registration:', error);
         alert('❌ Error deleting registration: ' + error.message);
     }
 }
