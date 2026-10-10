@@ -200,44 +200,80 @@ function localLogin() {
     showApp();
 }
 
+function showLoginError(message) {
+    const errorEl = document.getElementById('loginError');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        setTimeout(() => {
+            errorEl.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function googleSignIn() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            console.log('✅ Google Sign-in successful:', result.user.displayName);
+            window.currentMember = {
+                name: result.user.displayName || result.user.email,
+                email: result.user.email,
+                uid: result.user.uid
+            };
+            localStorage.setItem('googleLogin', 'true');
+            localStorage.setItem('memberEmail', result.user.email);
+            localStorage.setItem('memberName', result.user.displayName || result.user.email);
+            showApp();
+        })
+        .catch((error) => {
+            console.error('❌ Google Sign-in error:', error);
+            showLoginError('❌ Google Sign-in failed: ' + error.message);
+        });
+}
+
 function switchToEmailLogin() {
-    document.getElementById('localLoginStep').style.display = 'none';
+    document.getElementById('googleLoginStep').style.display = 'none';
     document.getElementById('emailStep').style.display = 'block';
 }
 
-function switchToLocalLogin() {
+function switchToGoogleLogin() {
     document.getElementById('emailStep').style.display = 'none';
-    document.getElementById('localLoginStep').style.display = 'block';
+    document.getElementById('googleLoginStep').style.display = 'block';
 }
 
 function checkLocalLogin() {
-    const isLocalLogin = localStorage.getItem('localLogin') === 'true';
+    const isGoogleLogin = localStorage.getItem('googleLogin') === 'true';
+    const memberEmail = localStorage.getItem('memberEmail');
     const memberName = localStorage.getItem('memberName');
 
-    console.log('🔍 Checking local login... stored:', isLocalLogin, 'name:', memberName);
+    console.log('🔍 Checking login... Google:', isGoogleLogin, 'Email:', memberEmail);
 
-    if (isLocalLogin && memberName) {
-        window.currentMember = { name: memberName };
-        console.log('✅ Resuming local login:', memberName);
+    if (isGoogleLogin && memberEmail && memberName) {
+        window.currentMember = {
+            name: memberName,
+            email: memberEmail
+        };
+        console.log('✅ Resuming Google login:', memberName);
         showApp();
         return true;
     }
 
-    // Show local login by default
+    // Show Google login by default
     try {
         const loginScreen = document.getElementById('loginScreen');
-        const localStep = document.getElementById('localLoginStep');
+        const googleStep = document.getElementById('googleLoginStep');
         const emailStep = document.getElementById('emailStep');
         const verifyStep = document.getElementById('verificationStep');
 
         if (loginScreen) loginScreen.style.display = 'flex';
-        if (localStep) localStep.style.display = 'block';
+        if (googleStep) googleStep.style.display = 'block';
         if (emailStep) emailStep.style.display = 'none';
         if (verifyStep) verifyStep.style.display = 'none';
 
-        console.log('✅ Local login screen shown');
+        console.log('✅ Google login screen shown');
     } catch (e) {
-        console.error('Error showing local login:', e);
+        console.error('Error showing login:', e);
     }
 
     return false;
@@ -2612,7 +2648,13 @@ function goBackFromBibleReader() {
 function logoutMember() {
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isLoggedIn');
-    location.reload();
+    localStorage.removeItem('googleLogin');
+    localStorage.removeItem('memberEmail');
+    localStorage.removeItem('memberName');
+    firebase.auth().signOut().then(() => {
+        console.log('✅ Logged out');
+        location.reload();
+    }).catch(error => console.error('Logout error:', error));
 }
 
 // Check if user is already logged in

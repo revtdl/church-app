@@ -1,0 +1,123 @@
+Launching lib\main.dart on Web Server in debug mode...
+Waiting for connection from debug service on Web Server...      
+lib/screens/home_screen.dart:195:11: Error: 'FirebaseService' isn't a type.
+    final FirebaseService firebaseService = FirebaseService();
+          ^^^^^^^^^^^^^^^
+lib/screens/home_screen.dart:243:38: Error: 'Event' isn't a type.
+                  StreamBuilder<List<Event>>(
+                                     ^^^^^
+lib/screens/home_screen.dart:278:38: Error: 'Sermon' isn't a type.
+                  StreamBuilder<List<Sermon>>(
+                                     ^^^^^^
+lib/screens/home_screen.dart:195:45: Error: The method 'FirebaseService' isn't defined for the type 'HomeTab'.
+ - 'HomeTab' is from 'package:church_app/screens/home_screen.dart' ('lib/screens/home_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'FirebaseService'.
+    final FirebaseService firebaseService = FirebaseService();
+                                            ^^^^^^^^^^^^^^^
+lib/screens/home_screen.dart:264:46: Error: The method 'DateFormat' isn't defined for the type 'HomeTab'.
+ - 'HomeTab' is from 'package:church_app/screens/home_screen.dart' ('lib/screens/home_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'DateFormat'.
+                              subtitle: Text(DateFormat('MMM dd, yyyy – hh:mm a')
+                                             ^^^^^^^^^^
+lib/screens/home_screen.dart:308:33: Error: The method 'DateFormat' isn't defined for the type 'HomeTab'.
+ - 'HomeTab' is from 'package:church_app/screens/home_screen.dart' ('lib/screens/home_screen.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'DateFormat'.
+                                DateFormat('MMM dd, yyyy').format(sermon.date),
+                                ^^^^^^^^^^
+lib/screens/events_screen.dart:162:34: Error: Expected ')' before this.
+                                );
+                                 ^
+Unhandled exception:
+Unsupported operation: Unsupported invalid type InvalidType(<invalid>) (InvalidType). Encountered while compiling file:///C:/Users/amaze/projects/church_app/lib/screens/home_screen.dart, which contains the type: InterfaceType(StreamBuilder<List<<invalid>>>).
+#0      LibraryCompiler._typeCompilationError (package:dev_compiler/src/kernel/compiler_new.dart:4493)
+#1      LibraryCompiler._emitType (package:dev_compiler/src/kernel/compiler_new.dart:4458)
+#2      LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8293)
+#3      ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#4      LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#5      MappedIterable.elementAt (dart:_internal/iterable.dart:402)
+#6      ListIterator.moveNext (dart:_internal/iterable.dart:371)
+#7      new _GrowableList._ofEfficientLengthIterable (dart:core-patch/growable_array.dart:194)
+#8      new _GrowableList.of (dart:core-patch/growable_array.dart:154)
+#9      new List.of (dart:core-patch/array_patch.dart:39)
+#10     SetBase.toList (dart:collection/set.dart:119)
+#11     LibraryCompiler._visitExpressionList (package:dev_compiler/src/kernel/compiler_new.dart:5099)
+#12     LibraryCompiler.visitListLiteral (package:dev_compiler/src/kernel/compiler_new.dart:8733)
+#13     ListLiteral.accept (package:kernel/src/ast/expressions.dart:4552)
+#14     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#15     LibraryCompiler._emitNamedExpression (package:dev_compiler/src/kernel/compiler_new.dart:8054)
+#16     LibraryCompiler._emitArgumentGroups (package:dev_compiler/src/kernel/compiler_new.dart:8044)
+#17     LibraryCompiler._emitArgumentList (package:dev_compiler/src/kernel/compiler_new.dart:7998)
+#18     LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8300)
+#19     ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#20     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#21     LibraryCompiler._emitNamedExpression (package:dev_compiler/src/kernel/compiler_new.dart:8054)
+#22     LibraryCompiler._emitArgumentGroups (package:dev_compiler/src/kernel/compiler_new.dart:8044)
+#23     LibraryCompiler._emitArgumentList (package:dev_compiler/src/kernel/compiler_new.dart:7998)
+#24     LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8300)
+#25     ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#26     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#27     MappedIterable.elementAt (dart:_internal/iterable.dart:402)
+#28     ListIterator.moveNext (dart:_internal/iterable.dart:371)
+#29     new _GrowableList._ofEfficientLengthIterable (dart:core-patch/growable_array.dart:194)
+#30     new _GrowableList.of (dart:core-patch/growable_array.dart:154)
+#31     new List.of (dart:core-patch/array_patch.dart:39)
+#32     SetBase.toList (dart:collection/set.dart:119)
+#33     LibraryCompiler._visitExpressionList (package:dev_compiler/src/kernel/compiler_new.dart:5099)
+#34     LibraryCompiler.visitListLiteral (package:dev_compiler/src/kernel/compiler_new.dart:8733)
+#35     ListLiteral.accept (package:kernel/src/ast/expressions.dart:4552)
+#36     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#37     LibraryCompiler._emitNamedExpression (package:dev_compiler/src/kernel/compiler_new.dart:8054)
+#38     LibraryCompiler._emitArgumentGroups (package:dev_compiler/src/kernel/compiler_new.dart:8044)
+#39     LibraryCompiler._emitArgumentList (package:dev_compiler/src/kernel/compiler_new.dart:7998)
+#40     LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8300)
+#41     ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#42     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#43     LibraryCompiler._emitNamedExpression (package:dev_compiler/src/kernel/compiler_new.dart:8054)
+#44     LibraryCompiler._emitArgumentGroups (package:dev_compiler/src/kernel/compiler_new.dart:8044)
+#45     LibraryCompiler._emitArgumentList (package:dev_compiler/src/kernel/compiler_new.dart:7998)
+#46     LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8300)
+#47     ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#48     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#49     LibraryCompiler._emitNamedExpression (package:dev_compiler/src/kernel/compiler_new.dart:8054)
+#50     LibraryCompiler._emitArgumentGroups (package:dev_compiler/src/kernel/compiler_new.dart:8044)
+#51     LibraryCompiler._emitArgumentList (package:dev_compiler/src/kernel/compiler_new.dart:7998)
+#52     LibraryCompiler.visitConstructorInvocation (package:dev_compiler/src/kernel/compiler_new.dart:8300)
+#53     ConstructorInvocation.accept (package:kernel/src/ast/expressions.dart:2950)
+#54     LibraryCompiler._visitExpression (package:dev_compiler/src/kernel/compiler_new.dart:5138)
+#55     LibraryCompiler.visitReturnStatement (package:dev_compiler/src/kernel/compiler_new.dart:5893)
+#56     ReturnStatement.accept (package:kernel/src/ast/statements.dart:1139)
+#57     LibraryCompiler._visitStatement (package:dev_compiler/src/kernel/compiler_new.dart:5035)
+#58     MappedIterable.elementAt (dart:_internal/iterable.dart:402)
+#59     ListIterator.moveNext (dart:_internal/iterable.dart:371)
+#60     new _GrowableList._ofEfficientLengthIterable (dart:core-patch/growable_array.dart:194)
+#61     new _GrowableList.of (dart:core-patch/growable_array.dart:154)
+#62     new List.of (dart:core-patch/array_patch.dart:39)
+#63     SetBase.toList (dart:collection/set.dart:119)
+#64     LibraryCompiler.visitBlock (package:dev_compiler/src/kernel/compiler_new.dart:5248)
+#65     Block.accept (package:kernel/src/ast/statements.dart:106)
+#66     LibraryCompiler._visitStatement (package:dev_compiler/src/kernel/compiler_new.dart:5035)
+#67     LibraryCompiler._emitFunctionScopedBody (package:dev_compiler/src/kernel/compiler_new.dart:5072)
+#68     LibraryCompiler._emitFunction.<anonymous closure> (package:dev_compiler/src/kernel/compiler_new.dart:4680)
+#69     LibraryCompiler._withLetScope (package:dev_compiler/src/kernel/compiler_new.dart:3674)
+#70     LibraryCompiler._withCurrentFunction (package:dev_compiler/src/kernel/compiler_new.dart:4854)
+#71     LibraryCompiler._emitFunction (package:dev_compiler/src/kernel/compiler_new.dart:4672)
+#72     LibraryCompiler._emitMethodDeclaration.<anonymous closure> (package:dev_compiler/src/kernel/compiler_new.dart:2941)
+#73     LibraryCompiler._withMethodDeclarationContext (package:dev_compiler/src/kernel/compiler_new.dart:4879)
+#74     LibraryCompiler._emitMethodDeclaration (package:dev_compiler/src/kernel/compiler_new.dart:2939)
+#75     LibraryCompiler._emitClassProperties (package:dev_compiler/src/kernel/compiler_new.dart:2880)
+#76     LibraryCompiler._emitClassDeclaration (package:dev_compiler/src/kernel/compiler_new.dart:1488)
+#77     LibraryCompiler._emitClass (package:dev_compiler/src/kernel/compiler_new.dart:1426)
+#78     List.forEach (dart:core-patch/growable_array.dart:428)
+#79     LibraryCompiler._emitLibrary (package:dev_compiler/src/kernel/compiler_new.dart:1348)
+#80     LibraryCompiler.emitLibrary (package:dev_compiler/src/kernel/compiler_new.dart:962)
+#81     LibraryBundleCompiler.emitModule (package:dev_compiler/src/kernel/compiler_new.dart:164)
+#82     IncrementalJavaScriptBundler.compile (package:frontend_server/src/javascript_bundle.dart:324)
+#83     FrontendCompiler.writeJavaScriptBundle (package:frontend_server/frontend_server.dart:922)
+<asynchronous suspension>
+#84     FrontendCompiler.compile (package:frontend_server/frontend_server.dart:728)
+<asynchronous suspension>
+#85     listenAndCompile.<anonymous closure> (package:frontend_server/frontend_server.dart:1449)
+<asynchronous suspension>
+The Dart compiler exited unexpectedly.
+Waiting for connection from debug service on Web Server...         41.8s
+Failed to compile application.
