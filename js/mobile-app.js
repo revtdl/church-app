@@ -229,11 +229,13 @@ function googleSignIn() {
             localStorage.setItem('googleLogin', 'true');
             localStorage.setItem('memberEmail', result.user.email);
             localStorage.setItem('memberName', result.user.displayName || result.user.email);
+            localStorage.setItem('memberUID', result.user.uid);
 
             // Log successful login
             logLoginAttempt(result.user, 'success', 'Google Sign-in');
 
-            showApp();
+            // Check if user is registered
+            checkUserRegistration(result.user.uid);
         })
         .catch((error) => {
             console.error('❌ Google Sign-in error:', error);
@@ -4374,6 +4376,105 @@ function updateActiveUsers(user) {
         })
         .catch((error) => {
             console.error('❌ Error updating user activity:', error);
+        });
+}
+
+// ===== REGISTRATION SYSTEM =====
+function checkUserRegistration(uid) {
+    if (!db) {
+        showNotification('❌ Database connection error');
+        return;
+    }
+
+    db.collection('registrations').doc(uid).get()
+        .then((doc) => {
+            if (doc.exists) {
+                // User already registered - go to app
+                console.log('✅ User registered, going to app');
+                showApp();
+            } else {
+                // New user - show registration form
+                console.log('📝 New user, showing registration form');
+                showRegistrationForm();
+            }
+        })
+        .catch((error) => {
+            console.error('❌ Error checking registration:', error);
+            // Default: show registration form for new users
+            showRegistrationForm();
+        });
+}
+
+function showRegistrationForm() {
+    const loginScreen = document.getElementById('loginScreen');
+    const regScreen = document.getElementById('registrationScreen');
+
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (regScreen) {
+        regScreen.style.display = 'flex';
+        // Pre-fill name if available
+        const nameInput = document.getElementById('regName');
+        if (nameInput && window.currentMember?.name) {
+            nameInput.value = window.currentMember.name;
+        }
+    }
+}
+
+function completeRegistration() {
+    const name = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const gender = document.getElementById('regGender').value.trim();
+    const dob = document.getElementById('regDOB').value.trim();
+    const regError = document.getElementById('regError');
+
+    // Validation
+    if (!name) {
+        regError.textContent = '❌ Please enter your full name';
+        regError.style.display = 'block';
+        return;
+    }
+
+    if (!phone || phone.length < 10) {
+        regError.textContent = '❌ Please enter a valid phone number (10 digits)';
+        regError.style.display = 'block';
+        return;
+    }
+
+    if (!window.currentMember?.uid) {
+        regError.textContent = '❌ User ID not found. Please login again.';
+        regError.style.display = 'block';
+        return;
+    }
+
+    // Save registration
+    const registration = {
+        uid: window.currentMember.uid,
+        email: window.currentMember.email,
+        name: name,
+        phone: phone,
+        gender: gender || '',
+        dob: dob || '',
+        registeredOn: new Date().toISOString(),
+        registrationComplete: true,
+        loginCount: firebase.firestore.FieldValue.increment(1)
+    };
+
+    db.collection('registrations').doc(window.currentMember.uid).set(registration)
+        .then(() => {
+            console.log('✅ Registration completed');
+            showNotification(`✅ Welcome ${name}! Registration complete.`);
+
+            // Update currentMember with full details
+            window.currentMember.name = name;
+            window.currentMember.phone = phone;
+            window.currentMember.gender = gender;
+
+            showApp();
+        })
+        .catch((error) => {
+            console.error('❌ Error saving registration:', error);
+            regError.textContent = '❌ Error saving registration: ' + error.message;
+            regError.style.display = 'block';
         });
 }
 

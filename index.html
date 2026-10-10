@@ -81,6 +81,50 @@
         </div>
     </div>
 
+    <!-- Registration Form (Hidden until first login) -->
+    <div id="registrationScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; min-height: 100vh;">
+        <div style="text-align: center; width: 100%; max-width: 400px; padding: 40px 20px;">
+            <div style="font-size: 72px; margin-bottom: 20px;">✍️</div>
+            <h1 style="margin: 0; font-size: 24px; margin-bottom: 10px;">Complete Your Profile</h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 30px 0;">Welcome! Please complete your registration</p>
+
+            <div style="background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                <!-- Name Field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Full Name *</label>
+                    <input type="text" id="regName" placeholder="Enter your full name" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <!-- Phone Field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Phone Number *</label>
+                    <input type="tel" id="regPhone" placeholder="98765 43210" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <!-- Gender Field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Gender</label>
+                    <select id="regGender" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        <option value="">Select...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- DOB Field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Date of Birth</label>
+                    <input type="date" id="regDOB" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+
+                <button onclick="completeRegistration()" style="width: 100%; background: white; color: #667eea; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 12px;">✅ Complete Registration</button>
+
+                <div id="regError" style="color: #ff6b6b; font-size: 13px; display: none; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2); margin-top: 12px;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App (Hidden until login) -->
     <div id="appContainer" class="container" style="display: none;">
         <!-- Header -->
