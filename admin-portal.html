@@ -930,7 +930,7 @@
                 </div>
 
                 <!-- Registered Members Section -->
-                <div id="registeredSection" class="section" style="display: none;">
+                <div id="registeredSection" class="section" style="display: none; padding: 20px;">
                     <div class="page-header">
                         <div class="page-title">📊 Registered Members Dashboard</div>
                         <div class="controls">
@@ -2142,9 +2142,17 @@
 
         // ===== REGISTERED MEMBERS FUNCTIONS =====
         function loadRegisteredMembers() {
-            if (!db) return;
+            console.log('Loading registered members...');
             const table = document.getElementById('registeredMembersTable');
-            if (!table) return;
+            if (!table) {
+                console.error('Table element not found');
+                return;
+            }
+            if (!db) {
+                console.error('Database not initialized');
+                table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #f44336;">Database not ready</td></tr>';
+                return;
+            }
 
             table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">Loading...</td></tr>';
 
