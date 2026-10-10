@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Members collection - everyone can read, authenticated can write
+    match /members/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Events collection - everyone can read, authenticated can write
+    match /events/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Announcements collection - everyone can read, authenticated can write
+    match /announcements/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Sermons collection - everyone can read, authenticated can write
+    match /sermons/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Prayers collection - everyone can read, authenticated can write
+    match /prayers/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Gallery collection - everyone can read, authenticated can write
+    match /gallery/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Offerings collection - everyone can read, authenticated can write
+    match /offerings/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+  }
+}

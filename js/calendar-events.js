@@ -4,7 +4,7 @@ let calendarEvents = [];
 let currentMonth = new Date();
 const CACHE_KEY = 'churchNexusEventCache';
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 'v2'; // Bump version to invalidate old cache
+const CACHE_VERSION = 'v3'; // Bump version to invalidate old cache
 
 // Load from cache first
 function loadCachedEvents() {
@@ -181,13 +181,80 @@ async function loadEventsForCalendar() {
 
                         if (!exists) {
                             const yearsMarried = anniversary.getFullYear() - weddingDate.getFullYear();
+
+                            // Find spouse: look for another member with same wedding date
+                            let spouseName = '';
+                            let spouse = null;
+
+                            // Find all members with same wedding date (should be 2: husband & wife)
+                            const couplesWithSameDate = members.filter(m =>
+                                m.dateOfWedding && m.dateOfWedding.trim() === member.dateOfWedding.trim() &&
+                                m.name !== member.name
+                            );
+
+                            if (couplesWithSameDate.length > 0) {
+                                spouse = couplesWithSameDate[0]; // Take first match
+
+                                // ALWAYS put MALE first, then FEMALE
+                                const memberGender = (member.gender || '').toLowerCase().trim();
+                                const spouseGender = (spouse.gender || '').toLowerCase().trim();
+
+                                // Check if male (accepts: male, m, m., husband, etc.)
+                                const isMale = (gender) => {
+                                    if (!gender) return false;
+                                    return gender.startsWith('m') || gender === 'male' || gender === 'husband';
+                                };
+
+                                const isFemale = (gender) => {
+                                    if (!gender) return false;
+                                    return gender.startsWith('f') || gender === 'female' || gender === 'wife';
+                                };
+
+                                let male = null;
+                                let female = null;
+
+                                // Determine who is male and who is female
+                                const memberIsMale = isMale(memberGender);
+                                const spouseIsMale = isMale(spouseGender);
+
+                                const memberIsFemale = isFemale(memberGender);
+                                const spouseIsFemale = isFemale(spouseGender);
+
+                                if (memberIsMale) {
+                                    male = member.name;
+                                    female = spouse.name;
+                                } else if (spouseIsMale) {
+                                    male = spouse.name;
+                                    female = member.name;
+                                } else if (memberIsFemale && !spouseIsFemale) {
+                                    // Member is female, spouse is not - swap
+                                    male = spouse.name;
+                                    female = member.name;
+                                } else if (spouseIsFemale && !memberIsFemale) {
+                                    // Spouse is female, member is not - keep order
+                                    male = member.name;
+                                    female = spouse.name;
+                                } else {
+                                    // Both or neither have gender - use alphabetical as last resort
+                                    const sorted = [member.name, spouse.name].sort();
+                                    male = sorted[0];
+                                    female = sorted[1];
+                                }
+
+                                spouseName = `${male} & ${female}`;
+                                console.log(`✅ Anniversary: ${spouseName}`);
+                            } else {
+                                spouseName = member.name;
+                                console.log(`⚠️ No spouse found for ${member.name} (Wedding: ${member.dateOfWedding})`);
+                            }
+
                             calendarEvents.push({
                                 date: anniversaryDate,
-                                title: `💍 ${member.name}'s Anniversary`,
+                                title: `💍 ${spouseName}'s Anniversary`,
                                 description: `${yearsMarried} years of marriage`,
                                 id: `anniversary_${member.name}`
                             });
-                            console.log('💍 Added anniversary:', member.name, 'on', anniversaryDate);
+                            console.log('💍 Added anniversary:', spouseName, 'on', anniversaryDate);
                         } else {
                             console.log('⏭️ Skipped duplicate anniversary:', member.name);
                         }

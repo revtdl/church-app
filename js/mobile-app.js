@@ -2,6 +2,50 @@
 const UPI_ID = "qr.wmchurch@sib";
 const WHATSAPP_NUMBER = "919986334250";
 
+// ===== NOTIFICATION SYSTEM =====
+let lastSeenPhotoTimestamp = localStorage.getItem('lastSeenPhotoTimestamp') || '2026-01-01T00:00:00.000Z';
+let lastSeenAnnouncementTimestamp = localStorage.getItem('lastSeenAnnouncementTimestamp') || '2026-01-01T00:00:00.000Z';
+let lastSeenEventTimestamp = localStorage.getItem('lastSeenEventTimestamp') || '2026-01-01T00:00:00.000Z';
+let lastSeenSermonTimestamp = localStorage.getItem('lastSeenSermonTimestamp') || '2026-01-01T00:00:00.000Z';
+let lastSeenPrayerTimestamp = localStorage.getItem('lastSeenPrayerTimestamp') || '2026-01-01T00:00:00.000Z';
+
+function showNotification(message, duration = 4000) {
+    const toast = document.getElementById('notificationToast');
+    const messageEl = document.getElementById('notificationMessage');
+
+    if (!toast || !messageEl) return;
+
+    messageEl.textContent = message;
+    toast.style.display = 'block';
+    toast.style.animation = 'slideDown 0.4s ease-out';
+
+    setTimeout(() => {
+        toast.style.animation = 'slideUp 0.4s ease-out';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 400);
+    }, duration);
+}
+
+function updateLastSeenTimestamp(type, timestamp) {
+    if (type === 'gallery') {
+        lastSeenPhotoTimestamp = timestamp;
+        localStorage.setItem('lastSeenPhotoTimestamp', timestamp);
+    } else if (type === 'announcement') {
+        lastSeenAnnouncementTimestamp = timestamp;
+        localStorage.setItem('lastSeenAnnouncementTimestamp', timestamp);
+    } else if (type === 'event') {
+        lastSeenEventTimestamp = timestamp;
+        localStorage.setItem('lastSeenEventTimestamp', timestamp);
+    } else if (type === 'sermon') {
+        lastSeenSermonTimestamp = timestamp;
+        localStorage.setItem('lastSeenSermonTimestamp', timestamp);
+    } else if (type === 'prayer') {
+        lastSeenPrayerTimestamp = timestamp;
+        localStorage.setItem('lastSeenPrayerTimestamp', timestamp);
+    }
+}
+
 // ===== OFFERING STATE =====
 let currentOfferingType = 'Offering';
 let currentAmount = '';
@@ -602,6 +646,24 @@ function searchMembers() {
     }
 }
 
+function clearMemberFilter() {
+    // Clear search input
+    const searchInput = document.getElementById('memberSearch');
+    if (searchInput) searchInput.value = '';
+
+    // Clear area filter
+    const areaFilter = document.getElementById('areaFilter');
+    if (areaFilter) areaFilter.value = '';
+
+    // Reset filter variables
+    currentAreaFilter = '';
+    currentMemberFilter = 'all';
+
+    // Refresh display
+    searchMembers();
+    console.log('🧹 Filters cleared');
+}
+
 // Bible Verse Rotation
 const bibleVerses = [
     // January - New Beginnings
@@ -884,10 +946,19 @@ function loadAnnouncementsRealtime() {
         db.collection('announcements').orderBy('createdAt', 'desc').onSnapshot(
             (snapshot) => {
                 console.log('Announcements snapshot received:', snapshot.size);
+                let newAnnouncementCount = 0;
+
                 if (snapshot.size > 0) {
                     let html = '';
                     snapshot.forEach(doc => {
                         const a = doc.data();
+                        const createdAtTimestamp = a.createdAt ? new Date(a.createdAt.seconds * 1000).toISOString() : new Date().toISOString();
+
+                        // Check if new announcement
+                        if (createdAtTimestamp > lastSeenAnnouncementTimestamp) {
+                            newAnnouncementCount++;
+                        }
+
                         const title = a.title || a.announcementTitle || 'Announcement';
                         const content = a.content || a.announcementContent || '';
                         let date = 'Today';
@@ -901,6 +972,17 @@ function loadAnnouncementsRealtime() {
                         html += '</div>';
                     });
                     announcementsList.innerHTML = html;
+
+                    // Show notification if new announcements
+                    if (newAnnouncementCount > 0 && lastSeenAnnouncementTimestamp !== '2026-01-01T00:00:00.000Z') {
+                        showNotification(`📢 ${newAnnouncementCount} new announcement${newAnnouncementCount > 1 ? 's' : ''}!`);
+                    }
+
+                    // Update last seen timestamp
+                    const firstDoc = snapshot.docs[0];
+                    if (firstDoc && firstDoc.data().createdAt) {
+                        updateLastSeenTimestamp('announcement', new Date(firstDoc.data().createdAt.seconds * 1000).toISOString());
+                    }
                 } else {
                     announcementsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No announcements yet</div>';
                 }
@@ -999,13 +1081,98 @@ function generateBirthdayAndAnniversaryEvents() {
                 }
 
                 const yearsMarried = today.getFullYear() - weddingDate.getFullYear();
+
+                // Find spouse: look for another member with same wedding date
+                let spouseName = '';
+                let spouse = null;
+
+                // Find all members with same wedding date (should be 2: husband & wife)
+                const couplesWithSameDate = window.allMembers.filter(m =>
+                    m.dateOfWedding && m.dateOfWedding.trim() === member.dateOfWedding.trim() &&
+                    m.name !== member.name
+                );
+
+                console.log(`🔍 Members with wedding date "${member.dateOfWedding}":`, couplesWithSameDate.map(m => m.name));
+
+                if (couplesWithSameDate.length > 0) {
+                    spouse = couplesWithSameDate[0]; // Take first match
+
+                    console.log(`\n🔴 === ANNIVERSARY DEBUG ===`);
+                    console.log(`Member 1: ${member.name}`);
+                    console.log(`  - Raw gender: "${member.gender}" (type: ${typeof member.gender})`);
+                    console.log(`  - Has gender field: ${!!member.gender}`);
+                    console.log(`Member 2: ${spouse.name}`);
+                    console.log(`  - Raw gender: "${spouse.gender}" (type: ${typeof spouse.gender})`);
+                    console.log(`  - Has gender field: ${!!spouse.gender}`);
+
+                    const memberGender = (member.gender || '').toLowerCase().trim();
+                    const spouseGender = (spouse.gender || '').toLowerCase().trim();
+
+                    console.log(`After processing:`);
+                    console.log(`  - ${member.name}: "${memberGender}"`);
+                    console.log(`  - ${spouse.name}: "${spouseGender}"`);
+
+                    // Check if male
+                    const isMale = (gender) => {
+                        const g = gender.toLowerCase().trim();
+                        return g === 'male' || g === 'm' || g.startsWith('m') || g === 'husband';
+                    };
+
+                    const memberIsMale = isMale(member.gender || '');
+                    const spouseIsMale = isMale(spouse.gender || '');
+
+                    console.log(`isMale check:`);
+                    console.log(`  - ${member.name} isMale: ${memberIsMale}`);
+                    console.log(`  - ${spouse.name} isMale: ${spouseIsMale}`);
+
+                    const isFemale = (gender) => {
+                        if (!gender) return false;
+                        const g = (gender || '').toLowerCase().trim();
+                        return g === 'female' || g === 'f' || g.startsWith('f') || g === 'wife';
+                    };
+
+                    const memberIsFemale = isFemale(member.gender);
+                    const spouseIsFemale = isFemale(spouse.gender);
+
+                    let male, female;
+                    if (memberIsMale) {
+                        male = member.name;
+                        female = spouse.name;
+                        console.log(`✅ Using: ${male} (MALE) & ${female} (FEMALE)`);
+                    } else if (spouseIsMale) {
+                        male = spouse.name;
+                        female = member.name;
+                        console.log(`✅ Using: ${male} (MALE) & ${female} (FEMALE)`);
+                    } else if (memberIsFemale && !spouseIsFemale) {
+                        male = spouse.name;
+                        female = member.name;
+                        console.log(`✅ Swapped: ${male} (MALE) & ${female} (FEMALE)`);
+                    } else if (spouseIsFemale && !memberIsFemale) {
+                        male = member.name;
+                        female = spouse.name;
+                        console.log(`✅ Using: ${male} (MALE) & ${female} (FEMALE)`);
+                    } else {
+                        // Fallback: alphabetical
+                        const sorted = [member.name, spouse.name].sort();
+                        male = sorted[0];
+                        female = sorted[1];
+                        console.log(`⚠️ FALLBACK (alphabetical): ${male} & ${female}`);
+                    }
+
+                    spouseName = `${male} & ${female}`;
+                    console.log(`🔴 === END DEBUG ===\n`);
+                } else {
+                    spouseName = member.name;
+                    console.log(`⚠️ No spouse found for ${member.name} (Wedding: ${member.dateOfWedding})`);
+                }
+
                 events.push({
                     id: `anniversary_${member.name}`,
-                    eventName: `💍 ${member.name}'s Anniversary`,
+                    eventName: `💍 ${spouseName}'s Anniversary`,
                     description: `${yearsMarried} years of marriage`,
                     date: `${anniversary.getFullYear()}-${String(anniversary.getMonth() + 1).padStart(2, '0')}-${String(anniversary.getDate()).padStart(2, '0')}`
                 });
-                console.log('💍 Anniversary event added:', member.name, 'Wedding Date:', dateStr);
+                console.log('💍 Anniversary event added:', spouseName, 'Wedding Date:', dateStr);
             } catch (e) {
                 console.log('⚠️ Invalid dateOfWedding for', member.name, ':', member.dateOfWedding, 'Error:', e.message);
             }
@@ -1038,18 +1205,36 @@ async function loadEventsRealtime() {
         let allEvents = [];
 
         // Add events from Firebase
+        let newEventCount = 0;
         snapshot.forEach(doc => {
             const e = doc.data();
+            const eventDate = e.date || new Date().toISOString().split('T')[0];
+
+            // Check if new event
+            if (eventDate > lastSeenEventTimestamp) {
+                newEventCount++;
+            }
+
             allEvents.push({
                 eventName: e.eventName || e.title || 'Event',
                 time: e.time || e.eventTime || '10:00 AM',
                 location: e.location || e.Location || '',
                 description: e.description || e.Description || '',
                 organizer: e.organizer || 'Church Admin',
-                date: e.date || new Date().toISOString().split('T')[0],
+                date: eventDate,
                 type: 'regular'
             });
         });
+
+        // Show notification if new events
+        if (newEventCount > 0 && lastSeenEventTimestamp !== '2026-01-01T00:00:00.000Z') {
+            showNotification(`📅 ${newEventCount} new event${newEventCount > 1 ? 's' : ''}!`);
+        }
+
+        // Update last seen timestamp
+        if (snapshot.size > 0 && snapshot.docs[0].data().date) {
+            updateLastSeenTimestamp('event', snapshot.docs[0].data().date);
+        }
 
         // Add birthday and anniversary events from members
         if (window.allMembers && window.allMembers.length > 0) {
@@ -1127,20 +1312,39 @@ async function loadSermonsRealtime() {
         const snapshot = await db.collection('sermons').orderBy('sermonDate', 'desc').get();
         if (snapshot.size > 0) {
             let html = '';
+            let newSermonCount = 0;
+
             snapshot.forEach(doc => {
                 const s = doc.data();
+                const sermonDate = s.sermonDate || new Date().toISOString().split('T')[0];
+
+                // Check if new sermon
+                if (sermonDate > lastSeenSermonTimestamp) {
+                    newSermonCount++;
+                }
+
                 const title = s.title || 'No title';
                 const speaker = s.speaker || 'Unknown speaker';
-                const date = s.sermonDate || 'No date';
                 const description = s.description || '';
                 html += '<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 12px;">';
                 html += '<div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 4px;">' + title + '</div>';
                 html += '<div style="font-size: 12px; color: #999; margin-bottom: 4px;">Speaker: ' + speaker + '</div>';
-                html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">Date: ' + date + '</div>';
+                html += '<div style="font-size: 12px; color: #999; margin-bottom: 8px;">Date: ' + sermonDate + '</div>';
                 html += '<div style="font-size: 14px; color: #666;">' + description + '</div>';
                 html += '</div>';
             });
+
             sermonsList.innerHTML = html;
+
+            // Show notification if new sermons
+            if (newSermonCount > 0 && lastSeenSermonTimestamp !== '2026-01-01T00:00:00.000Z') {
+                showNotification(`🙏 ${newSermonCount} new sermon${newSermonCount > 1 ? 's' : ''}!`);
+            }
+
+            // Update last seen timestamp
+            if (snapshot.docs[0].data().sermonDate) {
+                updateLastSeenTimestamp('sermon', snapshot.docs[0].data().sermonDate);
+            }
         } else {
             sermonsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No sermons available</div>';
         }
@@ -1164,8 +1368,17 @@ function loadPrayerRealtime() {
                 console.log('Prayers snapshot received:', snapshot.size);
                 if (snapshot.size > 0) {
                     let html = '';
+                    let newPrayerCount = 0;
+
                     snapshot.forEach(doc => {
                         const p = doc.data();
+                        const createdAtTimestamp = p.createdAt ? new Date(p.createdAt.seconds * 1000).toISOString() : new Date().toISOString();
+
+                        // Check if new prayer
+                        if (createdAtTimestamp > lastSeenPrayerTimestamp) {
+                            newPrayerCount++;
+                        }
+
                         const title = p.title || 'Prayer Request';
                         const content = p.content || '';
                         const date = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString() : 'No date';
@@ -1175,7 +1388,19 @@ function loadPrayerRealtime() {
                         html += '<div style="font-size: 14px; color: #666;">' + content + '</div>';
                         html += '</div>';
                     });
+
                     prayerList.innerHTML = html;
+
+                    // Show notification if new prayers
+                    if (newPrayerCount > 0 && lastSeenPrayerTimestamp !== '2026-01-01T00:00:00.000Z') {
+                        showNotification(`🙏 ${newPrayerCount} new prayer request${newPrayerCount > 1 ? 's' : ''}!`);
+                    }
+
+                    // Update last seen timestamp
+                    const firstDoc = snapshot.docs[0];
+                    if (firstDoc && firstDoc.data().createdAt) {
+                        updateLastSeenTimestamp('prayer', new Date(firstDoc.data().createdAt.seconds * 1000).toISOString());
+                    }
                 } else {
                     prayerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No prayer requests</div>';
                 }
@@ -3098,11 +3323,32 @@ function loadGalleryRealtime() {
   // Load from Firebase with real-time updates
   db.collection('gallery').orderBy('timestamp', 'desc').onSnapshot(
     snapshot => {
-      galleryPhotos = [];
+      const newPhotos = [];
+      let newPhotoCount = 0;
+
       snapshot.forEach(doc => {
-        galleryPhotos.push({...doc.data(), id: doc.id});
+        const photo = {...doc.data(), id: doc.id};
+        newPhotos.push(photo);
+
+        // Check if this is a new photo (uploaded after last seen)
+        if (photo.timestamp > lastSeenPhotoTimestamp) {
+          newPhotoCount++;
+        }
       });
+
+      // Show notification if new photos detected
+      if (newPhotoCount > 0 && galleryPhotos.length > 0) {
+        showNotification(`📸 ${newPhotoCount} new photo${newPhotoCount > 1 ? 's' : ''} uploaded!`);
+      }
+
+      galleryPhotos = newPhotos;
       console.log('✅ Gallery loaded from Firebase:', galleryPhotos.length, 'photos');
+
+      // Update last seen timestamp
+      if (galleryPhotos.length > 0) {
+        lastSeenPhotoTimestamp = galleryPhotos[0].timestamp;
+        localStorage.setItem('lastSeenPhotoTimestamp', lastSeenPhotoTimestamp);
+      }
 
       // Also update localStorage for backup
       localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
@@ -3138,7 +3384,7 @@ function displayFullscreenPhoto(index) {
   const img = document.getElementById('fullscreenImage');
 
   if (img) {
-    img.src = photo.imageUrl;
+    img.src = photo.imageData || photo.imageUrl;
 
     // Populate user info
     document.getElementById('fullscreenUsername').textContent = photo.uploadedBy || 'User';
@@ -3184,8 +3430,8 @@ function displayFullscreenPhoto(index) {
 function openFullscreenImage(imageUrl) {
   if (!imageUrl) return;
 
-  // Find the photo index
-  const index = galleryPhotos.findIndex(p => p.imageUrl === imageUrl);
+  // Find the photo index (support both imageUrl and imageData)
+  const index = galleryPhotos.findIndex(p => (p.imageUrl === imageUrl) || (p.imageData === imageUrl));
   if (index === -1) return;
 
   const modal = document.getElementById('fullscreenImageModal');
@@ -3252,9 +3498,9 @@ function displayGalleryPhotos() {
         </div>
 
         <!-- Photo -->
-        <div style="width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 72px; overflow: hidden; position: relative; color: white; cursor: pointer;" onclick="openFullscreenImage('${photo.imageUrl}')">
+        <div style="width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 72px; overflow: hidden; position: relative; color: white; cursor: pointer;" onclick="openFullscreenImage('${photo.imageData || photo.imageUrl}')">
           📷
-          ${photo.imageUrl ? `<img id="img-${index}" src="${photo.imageUrl}" style="position: absolute; width: 100%; height: 100%; object-fit: cover; display: none;" onload="this.style.display='block';" onerror="console.log('Image failed to load');">` : ''}
+          ${photo.imageData ? `<img id="img-${index}" src="${photo.imageData}" style="position: absolute; width: 100%; height: 100%; object-fit: cover; display: block;">` : (photo.imageUrl ? `<img id="img-${index}" src="${photo.imageUrl}" style="position: absolute; width: 100%; height: 100%; object-fit: cover; display: none;" onload="this.style.display='block';" onerror="console.log('Image failed to load');">` : '')}
         </div>
 
         <!-- Engagement Stats -->
@@ -3357,6 +3603,15 @@ function likePhoto(index) {
     photo.likes.push(userName);
   }
 
+  // Save to Firestore
+  db.collection('gallery').doc(photo.id).update({
+    likes: photo.likes
+  }).then(() => {
+    console.log('✅ Like saved to Firestore');
+  }).catch(error => {
+    console.error('❌ Error saving like:', error);
+  });
+
   localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
   displayGalleryPhotos();
 }
@@ -3378,15 +3633,27 @@ function addComment(index) {
 
   if (!photo.comments) photo.comments = [];
 
-  photo.comments.push({
+  const newComment = {
     name: currentMember?.name || 'Anonymous',
     text: text,
     timestamp: new Date().toISOString()
+  };
+
+  photo.comments.push(newComment);
+
+  // Save to Firestore
+  db.collection('gallery').doc(photo.id).update({
+    comments: photo.comments
+  }).then(() => {
+    console.log('✅ Comment saved to Firestore');
+    input.value = '';
+    displayGalleryPhotos();
+  }).catch(error => {
+    console.error('❌ Error saving comment:', error);
+    alert('Failed to save comment');
   });
 
   localStorage.setItem('galleryPhotos', JSON.stringify(galleryPhotos));
-  input.value = '';
-  displayGalleryPhotos();
 }
 
 function sharePhoto(index) {

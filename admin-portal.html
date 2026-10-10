@@ -9,11 +9,31 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+        }
+        .notification-toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white; padding: 16px 24px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 3000;
+            max-width: 300px; display: none;
+            animation: slideDown 0.4s ease-out;
+            font-weight: 600; font-size: 14px; text-align: center;
+        }
+        .notification-toast.error {
+            background: linear-gradient(135deg, #f44336 0%, #e53935 100%);
+        }
 
         .login-container {
             max-width: 400px;
@@ -669,6 +689,9 @@
     </style>
 </head>
 <body>
+    <!-- Notification Toast -->
+    <div id="adminNotification" class="notification-toast"></div>
+
     <!-- Login Section -->
     <div class="login-container" id="loginSection">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -1025,17 +1048,18 @@
                         <div class="page-title">📷 Gallery Management</div>
                         <div class="controls">
                             <button class="btn-primary" onclick="openGalleryUploadForm()">+ Upload Photo</button>
-                            <a href="https://drive.google.com/drive/folders/1OY0DJ4jOIgcon3O517wG3vuWLONnUPjY?usp=drive_link" target="_blank" class="btn-primary" style="background: #4285F4; text-decoration: none;">🔗 Google Drive Folder</a>
+                            <button class="btn-primary" onclick="loadGalleryPhotos()" style="background: #667eea;">🔄 Refresh</button>
                         </div>
                     </div>
 
-                    <!-- Google Drive Info -->
-                    <div style="background: #E3F2FD; border-left: 4px solid #4285F4; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                    <!-- Storage Info -->
+                    <div style="background: #E3F2FD; border-left: 4px solid #667eea; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
                         <div style="font-weight: 600; color: #333; margin-bottom: 8px;">📸 Gallery Storage Info:</div>
                         <div style="font-size: 13px; color: #555; line-height: 1.6;">
-                            <strong>Current:</strong> Photos stored in Google Drive (unlimited storage, free)<br>
-                            <strong>Upload method:</strong> <a href="https://drive.google.com/drive/folders/1OY0DJ4jOIgcon3O517wG3vuWLONnUPjY?usp=drive_link" target="_blank" style="color: #4285F4; text-decoration: none;">Open Google Drive Folder</a> → Click "+" → Upload files<br>
-                            <strong>Access:</strong> Photos viewable in mobile app and admin portal
+                            <strong>Storage:</strong> Firestore (base64 compressed)<br>
+                            <strong>Per Photo:</strong> Up to 500KB (compressed)<br>
+                            <strong>Total:</strong> ~2,000 photos on free plan<br>
+                            <strong>Sync:</strong> Real-time to mobile app ✨
                         </div>
                     </div>
 
@@ -1368,54 +1392,26 @@
             if (dateInput) dateInput.value = today;
         });
 
+        // NOTIFICATION FUNCTION
+        function showAdminNotification(message, isError = false) {
+            const toast = document.getElementById('adminNotification');
+            if (!toast) return;
+
+            toast.textContent = message;
+            toast.className = 'notification-toast' + (isError ? ' error' : '');
+            toast.style.display = 'block';
+            toast.style.animation = 'slideDown 0.4s ease-out';
+
+            setTimeout(() => {
+                toast.style.animation = 'slideUp 0.4s ease-out';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 400);
+            }, 4000);
+        }
+
         // GALLERY FUNCTIONS
-        let adminGalleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
-        const GOOGLE_CLIENT_ID = '1097407759754-v3r7ntmknf8gld9lncgjhoug9tm4lucr.apps.googleusercontent.com';
-        const GOOGLE_DRIVE_FOLDER_ID = '1OY0DJ4jOIgcon3O517wG3vuWLONnUPjY';
-        let gapiInited = false;
-        let gisInited = false;
-        let tokenClient;
-
-        function initializeGoogleAPI() {
-            gapi.load('client', () => {
-                gapi.client.init({
-                    apiKey: 'AIzaSyCLQfrH9ofr4yxO1090GzZuWmSxNUmPyjw',
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                    clientId: GOOGLE_CLIENT_ID,
-                    scope: 'https://www.googleapis.com/auth/drive.file'
-                }).then(() => {
-                    gapiInited = true;
-                    console.log('✅ Google API initialized');
-                });
-
-                window.google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleCredentialResponse
-                });
-
-                tokenClient = window.google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID,
-                    scope: 'https://www.googleapis.com/auth/drive.file',
-                    callback: handleTokenResponse,
-                });
-                gisInited = true;
-            });
-        }
-
-        function handleCredentialResponse(response) {
-            console.log('✅ Google authenticated');
-        }
-
-        function handleTokenResponse(response) {
-            if (response.access_token) {
-                uploadToDrive(response.access_token);
-            }
-        }
-
         function openGalleryUploadForm() {
-            if (!gapiInited || !gisInited) {
-                initializeGoogleAPI();
-            }
             document.getElementById('galleryUploadForm').style.display = 'block';
             document.getElementById('galleryCaption').focus();
         }
@@ -1426,117 +1422,138 @@
             document.getElementById('galleryPhoto').value = '';
         }
 
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxWidth = 500;
+                    const maxHeight = 500;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function uploadGalleryPhotoAdmin() {
             const caption = document.getElementById('galleryCaption').value.trim();
             const fileInput = document.getElementById('galleryPhoto');
             const file = fileInput.files[0];
 
             if (!caption) {
-                alert('❌ Please enter a caption');
+                showAdminNotification('❌ Please enter a caption', true);
                 return;
             }
 
             if (!file) {
-                alert('❌ Please select a photo');
+                showAdminNotification('❌ Please select a photo', true);
                 return;
             }
 
-            // Request Google Drive access
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                uploadToDrive(gapi.client.getToken().access_token);
+            if (!file.type.startsWith('image/')) {
+                showAdminNotification('❌ Please select a valid image file', true);
+                return;
             }
-        }
 
-        function uploadToDrive(accessToken) {
-            const fileInput = document.getElementById('galleryPhoto');
-            const file = fileInput.files[0];
-            const caption = document.getElementById('galleryCaption').value.trim();
+            const uploadBtn = document.querySelector('button[onclick="uploadGalleryPhotoAdmin()"]');
+            uploadBtn.disabled = true;
+            uploadBtn.innerText = '⏳ Uploading...';
 
-            const metadata = {
-                'name': file.name,
-                'mimeType': 'image/jpeg',
-                'parents': [GOOGLE_DRIVE_FOLDER_ID]
-            };
+            compressImage(file, async function(base64Data) {
+                try {
+                    const photoData = {
+                        caption: caption,
+                        imageData: base64Data,
+                        timestamp: new Date().toISOString(),
+                        fileName: file.name,
+                        uploadedBy: 'Admin',
+                        likes: [],
+                        comments: []
+                    };
 
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-            form.append('file', file);
+                    await db.collection('gallery').add(photoData);
+                    console.log('✅ Photo uploaded to Firestore');
 
-            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST',
-                headers: new Headers({
-                    'Authorization': 'Bearer ' + accessToken
-                }),
-                body: form
-            }).then(response => response.json())
-            .then(file => {
-                console.log('✅ File uploaded to Google Drive:', file.id);
-                // Create image URL from Google Drive file ID
-                const imageUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w500`;
-
-                const photo = {
-                    caption: caption,
-                    imageUrl: imageUrl,
-                    driveFileId: file.id,
-                    uploadedBy: 'Admin',
-                    timestamp: new Date().toISOString(),
-                    likes: [],
-                    comments: []
-                };
-
-                // Save metadata to Firestore
-                return db.collection('gallery').add(photo).then(docRef => {
-                    console.log('✅ Photo metadata saved to Firestore:', docRef.id);
-                    adminGalleryPhotos.unshift({...photo, id: docRef.id});
-                    localStorage.setItem('galleryPhotos', JSON.stringify(adminGalleryPhotos));
                     closeGalleryUploadForm();
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerText = '📤 Upload';
+                    showAdminNotification('✅ Photo uploaded successfully!');
+
                     loadGalleryPhotos();
-                    alert('✅ Photo uploaded successfully!');
+                } catch (error) {
+                    console.error('❌ Upload error:', error);
+                    showAdminNotification('❌ Upload failed: ' + error.message, true);
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerText = '📤 Upload';
+                }
+            });
+        }
+
+        async function loadGalleryPhotos() {
+            try {
+                const snapshot = await db.collection('gallery').orderBy('timestamp', 'desc').get();
+                const grid = document.getElementById('galleryPhotosGrid');
+
+                if (snapshot.empty) {
+                    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; grid-column: 1 / -1;">No photos uploaded yet</div>';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(doc => {
+                    const photo = doc.data();
+                    html += `
+                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; color: white; font-size: 48px;">
+                                ${photo.imageData ? `<img src="${photo.imageData}" style="width: 100%; height: 100%; object-fit: cover;">` : '📷'}
+                            </div>
+                            <div style="padding: 12px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 4px; font-size: 14px;">${photo.caption}</div>
+                                <div style="font-size: 12px; color: #999; margin-bottom: 10px;">${new Date(photo.timestamp).toLocaleDateString()}</div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 10px;">❤️ ${photo.likes ? photo.likes.length : 0} • 💬 ${photo.comments ? photo.comments.length : 0}</div>
+                                <button onclick="deleteGalleryPhoto('${doc.id}')" style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
                 });
-            }).catch(error => {
-                console.error('❌ Upload error:', error);
-                alert('❌ Error: ' + error.message);
-            });
-        }
 
-        function loadGalleryPhotos() {
-            adminGalleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
-            const grid = document.getElementById('galleryPhotosGrid');
-
-            if (adminGalleryPhotos.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; grid-column: 1 / -1;">No photos uploaded yet</div>';
-                return;
+                grid.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading gallery:', error);
             }
-
-            let html = '';
-            adminGalleryPhotos.forEach((photo, index) => {
-                html += `
-                    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <div style="width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; color: white; font-size: 48px;">
-                            📷
-                            ${photo.imageUrl ? `<img id="admin-img-${index}" src="${photo.imageUrl}" style="position: absolute; width: 100%; height: 100%; object-fit: cover; display: none;" onload="this.style.display='block';">` : ''}
-                        </div>
-                        <div style="padding: 12px;">
-                            <div style="font-weight: 600; color: #333; margin-bottom: 4px; font-size: 14px;">${photo.caption}</div>
-                            <div style="font-size: 12px; color: #999; margin-bottom: 10px;">${new Date(photo.timestamp).toLocaleDateString()}</div>
-                            <div style="font-size: 12px; color: #666; margin-bottom: 10px;">❤️ ${photo.likes ? photo.likes.length : 0} • 💬 ${photo.comments ? photo.comments.length : 0}</div>
-                            <button onclick="deleteGalleryPhoto(${index})" style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">🗑️ Delete</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            grid.innerHTML = html;
         }
 
-        function deleteGalleryPhoto(index) {
+        async function deleteGalleryPhoto(photoId) {
             if (confirm('Are you sure you want to delete this photo?')) {
-                adminGalleryPhotos.splice(index, 1);
-                localStorage.setItem('galleryPhotos', JSON.stringify(adminGalleryPhotos));
-                loadGalleryPhotos();
-                alert('✅ Photo deleted successfully!');
+                try {
+                    await db.collection('gallery').doc(photoId).delete();
+                    console.log('✅ Photo deleted');
+                    loadGalleryPhotos();
+                } catch (error) {
+                    console.error('❌ Delete error:', error);
+                    alert('Delete failed: ' + error.message);
+                }
             }
         }
 

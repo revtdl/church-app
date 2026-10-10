@@ -16,6 +16,22 @@
     <script src="js/calendar-events.js"></script>
 </head>
 <body>
+    <!-- Notification Toast -->
+    <div id="notificationToast" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 3000; max-width: 300px; display: none; animation: slideDown 0.4s ease-out;">
+        <div id="notificationMessage" style="font-weight: 600; font-size: 14px; text-align: center;"></div>
+    </div>
+
+    <style>
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+        }
+    </style>
+
     <!-- Mobile Login Screen - Email Authentication -->
     <div id="loginScreen" class="container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; min-height: 100vh;">
         <div style="text-align: center; width: 100%; max-width: 400px; padding: 40px 20px;">
@@ -132,6 +148,7 @@
                         <select id="areaFilter" onchange="filterByArea()" style="padding: 5px 8px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; font-size: 11px;">
                             <option value="">📍 Area</option>
                         </select>
+                        <button onclick="clearMemberFilter()" style="padding: 5px 12px; border: 1px solid #ddd; border-radius: 3px; background: #f0f0f0; cursor: pointer; font-size: 11px; font-weight: 600; color: #666;">✕ Clear Filter</button>
                     </div>
                 </div>
 
@@ -272,26 +289,15 @@
             <div id="gallery" class="screen">
                 <div style="margin-bottom: 12px; display: flex; gap: 8px;">
                     <button onclick="goBack()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; flex: 1;">← Back</button>
+                    <button onclick="loadGalleryRealtime()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 50px; display: flex; align-items: center; justify-content: center;">🔄</button>
                 </div>
                 <div class="section-title">📸 Gallery</div>
 
-                <!-- Google Drive Link -->
-                <div style="background: white; border: 2px solid #4285F4; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
-                    <div style="font-weight: 600; color: #333; margin-bottom: 12px;">📤 Full Gallery on Google Drive</div>
-                    <a href="https://drive.google.com/drive/folders/1OY0DJ4jOIgcon3O517wG3vuWLONnUPjY?usp=drive_link" target="_blank" style="display: inline-block; background: #4285F4; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer;">
-                        🔗 View on Google Drive
-                    </a>
-                    <div style="font-size: 12px; color: #666; margin-top: 8px;">Click to view all photos in Google Drive</div>
-                </div>
-
                 <!-- Upload Instructions -->
-                <div style="background: #FFF3E0; border-left: 4px solid #FF9800; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #333;">
-                    <div style="font-weight: 600; margin-bottom: 6px;">📸 How to upload photos:</div>
-                    <div>1. Click "View on Google Drive" button</div>
-                    <div>2. Click the "+" button in Google Drive</div>
-                    <div>3. Select "File upload"</div>
-                    <div>4. Choose your photo</div>
-                    <div>5. Photos appear instantly!</div>
+                <div style="background: #E3F2FD; border-left: 4px solid #667eea; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #333;">
+                    <div style="font-weight: 600; margin-bottom: 6px;">📸 Admin Portal Upload:</div>
+                    <div>Admins can upload photos through the Admin Portal.</div>
+                    <div>Photos will appear here automatically! ✨</div>
                 </div>
 
                 <div id="galleryPhotos" style="display: grid; grid-template-columns: 1fr; gap: 16px;"></div>

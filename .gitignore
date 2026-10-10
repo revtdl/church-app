@@ -1,28 +1,19 @@
-﻿# Dependencies
-node_modules/
-package-lock.json
-yarn.lock
-
-# Environment
+# Secrets & Credentials
+churchapp-74dec-firebase-adminsdk-fbsvc-da4f9fa9ee.json
+*.key
+*.pem
 .env
 .env.local
-.env.*.local
+firebase-key.json
 
-# Build outputs
+# Node modules
+node_modules/
+
+# Build & Cache
+.firebase/
 dist/
 build/
-*.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Firebase
-firebase-debug.log
