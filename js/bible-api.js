@@ -3,9 +3,11 @@
 
 async function fetchBiblePassage(bookName, chapter, language = 'English') {
     try {
-        // Use free Bible API (bible-api.com)
+        console.log('📖 Fetching:', bookName, 'Chapter', chapter);
+
+        // Try the API FIRST (gets better/more complete verses)
         const reference = `${bookName} ${chapter}`;
-        const response = await fetch(`https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`);
+        const response = await fetch(`https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`, { timeout: 5000 });
 
         if (response && response.ok) {
             const data = await response.json();
@@ -14,15 +16,34 @@ async function fetchBiblePassage(bookName, chapter, language = 'English') {
                     verse: verse.reference || '',
                     content: verse.text || ''
                 }));
+                console.log('✅ Got', verses.length, 'verses from API');
                 return { verses };
             }
         }
 
-        // Fallback: Return sample verses if API fails
+        // API failed or returned no data - use local fallback
+        console.log('⚠️ API failed, using local fallback data');
+        if (BIBLE_DATA_FALLBACK && BIBLE_DATA_FALLBACK[bookName]) {
+            const fallbackData = getBibleDataFallback(bookName, chapter);
+            if (fallbackData && fallbackData.verses && fallbackData.verses.length > 0) {
+                console.log('✅ Using local fallback -', fallbackData.verses.length, 'verses');
+                return fallbackData;
+            }
+        }
+
+        // Final fallback: Sample verses
+        console.log('⚠️ Using sample fallback verses');
         return getSampleVerses(bookName, chapter);
 
     } catch (error) {
-        console.error('Error fetching Bible passage:', error);
+        console.error('❌ API Error:', error.message);
+
+        // Use local data as fallback
+        if (BIBLE_DATA_FALLBACK && BIBLE_DATA_FALLBACK[bookName]) {
+            console.log('📚 Falling back to local data');
+            return getBibleDataFallback(bookName, chapter);
+        }
+
         return getSampleVerses(bookName, chapter);
     }
 }

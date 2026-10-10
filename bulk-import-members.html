@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Import Members - Church Nexus</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+        .status.loading {
+            background: #f3f3f3;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .stats {
+            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Bulk Import Members</h1>
+        <p class="subtitle">Import all members from Excel into Church Nexus</p>
+
+        <div class="info-box">
+            ℹ️ This tool will import all members from the "All Members" sheet in your Excel file. Duplicates (by name) will be skipped.
+        </div>
+
+        <input type="file" id="excelFile" accept=".xlsx,.xls" />
+        <button onclick="importMembers()">🚀 Import Members</button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Config -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXN2CFtyuZQbGKJbciB8Nm9WYTGVxXQ6g",
+            authDomain: "churchapp-74dec.firebaseapp.com",
+            projectId: "churchapp-74dec",
+            storageBucket: "churchapp-74dec.firebasestorage.app",
+            messagingSenderId: "684996448330",
+            appId: "1:684996448330:web:4531fce57b5af27c4c16b3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function importMembers() {
+            const fileInput = document.getElementById('excelFile');
+            const statusDiv = document.getElementById('status');
+
+            if (!fileInput.files.length) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Please select an Excel file';
+                return;
+            }
+
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.innerHTML = '<div class="spinner"></div>Reading Excel file...';
+
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = async (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+
+                        // Get "All Members" sheet
+                        const sheetName = workbook.SheetNames.find(name => name.includes('All Members'));
+                        if (!sheetName) {
+                            throw new Error('Sheet "All Members" not found in Excel file');
+                        }
+
+                        const worksheet = workbook.Sheets[sheetName];
+                        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                        // Skip header rows and filter valid data
+                        const members = [];
+                        const existingNames = new Set();
+
+                        // Get existing members to avoid duplicates
+                        const existingSnapshot = await db.collection('members').get();
+                        existingSnapshot.forEach(doc => {
+                            existingNames.add(doc.data().name?.toLowerCase());
+                        });
+
+                        // Process rows starting from row with headers
+                        let headerRow = null;
+                        for (let i = 0; i < Math.min(10, rows.length); i++) {
+                            if (rows[i][0] === 'Category' || rows[i][3]) {
+                                headerRow = i;
+                                break;
+                            }
+                        }
+
+                        if (headerRow === null) {
+                            throw new Error('Could not find member data headers');
+                        }
+
+                        // Parse member data
+                        for (let i = headerRow + 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            const name = row[3]?.toString().trim();
+
+                            if (!name || name.length < 2) continue;
+
+                            // Skip if duplicate
+                            if (existingNames.has(name.toLowerCase())) {
+                                console.log('Skipping duplicate:', name);
+                                continue;
+                            }
+
+                            const member = {
+                                name: name,
+                                email: row[47] || '',
+                                phone: row[46] || '',
+                                phone2: '',
+                                familyHead: row[5] ? 'Head' : 'Dependent',
+                                familyNumber: row[2] || '',
+                                area: row[44] || '',
+                                address: row[45] || '',
+                                dateOfBirth: row[8]?.toString() || '',
+                                maritalStatus: row[50] || '',
+                                spouseName: row[7] || '',
+                                child1: '',
+                                child2: '',
+                                child3: '',
+                                child4: '',
+                                dateOfBaptism: '',
+                                dateOfConfirmation: '',
+                                dateOfJoining: '',
+                                dateOfLeaving: '',
+                                membershipStatus: row[0]?.toString() || 'Member',
+                                monthlyContribution: '',
+                                remarks: '',
+                                profileImage: null,
+                                createdAt: new Date()
+                            };
+
+                            members.push(member);
+                        }
+
+                        if (members.length === 0) {
+                            throw new Error('No valid members found in Excel file');
+                        }
+
+                        // Import members
+                        statusDiv.className = 'status loading';
+                        statusDiv.innerHTML = `
+                            <div class="spinner"></div>
+                            <div>
+                                Importing ${members.length} members...
+                                <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+                                <div class="stats">
+                                    <div id="countDisplay">0 / ${members.length}</div>
+                                </div>
+                            </div>
+                        `;
+
+                        let imported = 0;
+                        const batch = db.batch();
+
+                        for (const member of members) {
+                            const ref = db.collection('members').doc();
+                            batch.set(ref, member);
+                            imported++;
+
+                            // Update progress
+                            document.getElementById('progressBar').style.width = (imported / members.length * 100) + '%';
+                            document.getElementById('countDisplay').textContent = imported + ' / ' + members.length;
+                        }
+
+                        await batch.commit();
+
+                        statusDiv.className = 'status success';
+                        statusDiv.innerHTML = `
+                            ✅ <strong>Success!</strong><br>
+                            Imported <strong>${imported}</strong> members into Church Nexus<br><br>
+                            <a href="admin-portal.html" style="color: inherit; text-decoration: underline;">View Members →</a>
+                        `;
+
+                        // Reset file input
+                        setTimeout(() => fileInput.value = '', 2000);
+
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        statusDiv.className = 'status error';
+                        statusDiv.innerHTML = `❌ <strong>Error:</strong> ${error.message}`;
+                    }
+                };
+
+                reader.readAsArrayBuffer(file);
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ <strong>Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

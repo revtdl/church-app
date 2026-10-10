@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1369,8 +1370,52 @@
 
         // GALLERY FUNCTIONS
         let adminGalleryPhotos = JSON.parse(localStorage.getItem('galleryPhotos')) || [];
+        const GOOGLE_CLIENT_ID = '1097407759754-v3r7ntmknf8gld9lncgjhoug9tm4lucr.apps.googleusercontent.com';
+        const GOOGLE_DRIVE_FOLDER_ID = '1OY0DJ4jOIgcon3O517wG3vuWLONnUPjY';
+        let gapiInited = false;
+        let gisInited = false;
+        let tokenClient;
+
+        function initializeGoogleAPI() {
+            gapi.load('client', () => {
+                gapi.client.init({
+                    apiKey: 'AIzaSyD...',
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                    clientId: GOOGLE_CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/drive.file'
+                }).then(() => {
+                    gapiInited = true;
+                    console.log('✅ Google API initialized');
+                });
+
+                window.google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse
+                });
+
+                tokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: handleTokenResponse,
+                });
+                gisInited = true;
+            });
+        }
+
+        function handleCredentialResponse(response) {
+            console.log('✅ Google authenticated');
+        }
+
+        function handleTokenResponse(response) {
+            if (response.access_token) {
+                uploadToDrive(response.access_token);
+            }
+        }
 
         function openGalleryUploadForm() {
+            if (!gapiInited || !gisInited) {
+                initializeGoogleAPI();
+            }
             document.getElementById('galleryUploadForm').style.display = 'block';
             document.getElementById('galleryCaption').focus();
         }
@@ -1396,19 +1441,45 @@
                 return;
             }
 
-            // Upload to Cloud Storage
-            const storageRef = firebase.storage().ref();
-            const fileName = 'gallery/' + Date.now() + '_' + file.name;
-            const fileRef = storageRef.child(fileName);
+            // Request Google Drive access
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                uploadToDrive(gapi.client.getToken().access_token);
+            }
+        }
 
-            fileRef.put(file).then(snapshot => {
-                console.log('✅ File uploaded to Cloud Storage');
-                // Get download URL
-                return fileRef.getDownloadURL();
-            }).then(imageUrl => {
+        function uploadToDrive(accessToken) {
+            const fileInput = document.getElementById('galleryPhoto');
+            const file = fileInput.files[0];
+            const caption = document.getElementById('galleryCaption').value.trim();
+
+            const metadata = {
+                'name': file.name,
+                'mimeType': 'image/jpeg',
+                'parents': [GOOGLE_DRIVE_FOLDER_ID]
+            };
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+            form.append('file', file);
+
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: new Headers({
+                    'Authorization': 'Bearer ' + accessToken
+                }),
+                body: form
+            }).then(response => response.json())
+            .then(file => {
+                console.log('✅ File uploaded to Google Drive:', file.id);
+                // Create image URL from Google Drive file ID
+                const imageUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w500`;
+
                 const photo = {
                     caption: caption,
                     imageUrl: imageUrl,
+                    driveFileId: file.id,
                     uploadedBy: 'Admin',
                     timestamp: new Date().toISOString(),
                     likes: [],
